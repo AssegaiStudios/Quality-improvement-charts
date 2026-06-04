@@ -8,7 +8,7 @@ Python package for Quality Improvement (QI) and Statistical Process Control (SPC
 
 ---
 ![Release](https://img.shields.io/github/v/release/AssegaiStudios/Quality-improvement-charts)
-![License](https://img.shields.io/github/license/AssegaiStudios/Quality-improvement-charts)
+
 
 ## New in v0.2.0
 
