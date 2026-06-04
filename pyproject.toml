@@ -1,18 +1,27 @@
 [build-system]
-requires = ["hatchling>=1.24"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqicharts"
-version = "0.1.0"
-description = "Quality Improvement charts for Python: run charts, Shewhart control charts, Pareto charts, and Anhøj rules."
+version = "0.2.0"
+description = "Quality Improvement and Statistical Process Control charts for Python"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = {text = "MIT"}
 authors = [
-  { name = "Craig la B" }
+  {name = "Assegai Studios Ltd"}
 ]
-keywords = ["quality-improvement", "spc", "control-charts", "run-charts", "healthcare", "pareto"]
+keywords = [
+  "quality improvement",
+  "statistical process control",
+  "spc",
+  "run charts",
+  "control charts",
+  "healthcare analytics",
+  "power bi",
+  "excel"
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Healthcare Industry",
@@ -26,29 +35,25 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
-  "matplotlib>=3.7",
-  "numpy>=1.23",
+  "numpy>=1.22",
   "pandas>=1.5",
+  "matplotlib>=3.5",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=7.0",
-  "ruff>=0.4",
+  "pytest>=7",
+  "build>=1.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/craigl-uk/pyqicharts"
-Repository = "https://github.com/craigl-uk/pyqicharts"
-Issues = "https://github.com/craigl-uk/pyqicharts/issues"
+Homepage = "https://github.com/AssegaiStudios/Quality-improvement-charts"
+Repository = "https://github.com/AssegaiStudios/Quality-improvement-charts"
+Issues = "https://github.com/AssegaiStudios/Quality-improvement-charts/issues"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/pyqicharts"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 88
-src = ["src", "tests"]
+addopts = "-q"

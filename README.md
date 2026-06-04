@@ -1,113 +1,53 @@
 # pyqicharts
 
-Python package for Quality Improvement (QI) charts, including run charts, Shewhart control charts, Pareto charts, Anhøj run-chart rules, and healthcare improvement analytics.
+Python package for Quality Improvement (QI) and Statistical Process Control (SPC) charts.
 
-This project is inspired by the excellent R package `qicharts2`. The aim is to bring practical Quality Improvement and Statistical Process Control charting to Python users working in healthcare, public services, operations, research, and improvement science.
+`pyqicharts` is inspired by the R package `qicharts2` and aims to provide a Python-first toolkit for run charts, Shewhart control charts, Pareto charts, improvement analytics, and QI reporting.
 
-> Status: early alpha. The first implementation includes run charts, individuals charts, Pareto charts, basic Anhøj-style diagnostics, and Shewhart 3-sigma detection for individuals charts.
+> Status: early alpha. Version 0.2.0 is suitable for testing, examples, learning, and early feedback. Validate outputs before operational use.
+
+---
+
+## New in v0.2.0
+
+- Moving Range (MR) charts
+- Improved Individuals (I) chart calculations
+- `qic_table()` for Excel, Power BI, dashboards and reporting pipelines
+- `pareto_table()` for Excel and Power BI integration
+- `QicResult.table` output for every chart
+- Power BI example script
+- Excel/Python example script
+- Expanded tests
+- Updated documentation and roadmap
+
+---
+
+## Supported charts
+
+| Chart | Status |
+|---|---|
+| Run chart | Available |
+| Individuals / I chart | Available |
+| Moving Range / MR chart | Available |
+| Pareto chart | Available |
+| C chart | Planned |
+| P chart | Planned |
+| U chart | Planned |
+| Xbar chart | Planned |
+| S chart | Planned |
+| T chart | Planned |
+| G chart | Planned |
+| P′ / U′ risk-adjusted charts | Planned |
+
+---
 
 ## Installation
 
-From a local checkout:
-
-```bash
-pip install -e .
-```
-
-With development tools:
+From a cloned repository:
 
 ```bash
 pip install -e .[dev]
 ```
-
-## Quick start
-
-```python
-import pandas as pd
-from pyqicharts import qic
-
-sample = pd.DataFrame({
-    "month": range(1, 13),
-    "infections": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
-})
-
-result = qic(
-    data=sample,
-    x="month",
-    y="infections",
-    chart="run",
-    title="Hospital infections",
-)
-
-print(result.summary())
-result.figure.show()
-```
-
-## Individuals chart
-
-```python
-from pyqicharts import qic
-
-result = qic(
-    data=sample,
-    x="month",
-    y="infections",
-    chart="i",
-)
-
-print(result.summary())
-result.figure.show()
-```
-
-## Pareto chart
-
-```python
-import pandas as pd
-from pyqicharts import paretochart
-
-incidents = pd.DataFrame({
-    "incident_type": [
-        "Medication",
-        "Falls",
-        "Medication",
-        "Pressure ulcer",
-        "Falls",
-        "Medication",
-    ]
-})
-
-result = paretochart(incidents, category="incident_type")
-print(result.table)
-result.figure.show()
-```
-
-## Current features
-
-- `qic()` for run charts
-- `qic()` for individuals charts
-- `paretochart()` for Pareto charts
-- Median, runs, crossings, and longest-run diagnostics
-- Early Anhøj-style signal flags for long runs and few crossings
-- Shewhart 3-sigma detection for individuals charts
-- Matplotlib chart output
-- Pandas-friendly API
-- Pytest test suite
-
-## Planned chart types
-
-- MR chart
-- Xbar chart
-- S chart
-- T chart
-- C chart
-- U chart
-- U′ chart
-- P chart
-- P′ chart
-- G chart
-- Bernoulli CUSUM chart
-
-## Development
 
 Run tests:
 
@@ -115,42 +55,207 @@ Run tests:
 pytest
 ```
 
-Run linting:
+---
 
-```bash
-ruff check .
+## Quick start
+
+```python
+import pandas as pd
+from pyqicharts import qic
+
+df = pd.DataFrame({
+    "month": range(1, 13),
+    "value": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
+})
+
+chart = qic(df, x="month", y="value", chart="run")
+chart.figure
 ```
 
-Build package:
+Access the calculations:
 
-```bash
-python -m build
+```python
+chart.table
+chart.anhoej
+chart.summary()
 ```
 
-## Project goals
+---
 
-The long-term goal is to provide a complete Python toolkit for:
+## Individuals chart
 
-- Quality Improvement
-- Statistical Process Control
-- Healthcare analytics
-- Improvement science
-- Process behaviour charts
-- Continuous improvement
+```python
+from pyqicharts import qic
 
-while remaining easy to use, statistically transparent, well tested, and suitable for real-world analytical workflows.
+chart = qic(df, x="month", y="value", chart="i")
+chart.figure
+chart.table
+```
 
-## Important note on statistical validation
+The I chart uses the average moving range to estimate sigma:
 
-This package is in early development. The current Anhøj-style rule implementation is deliberately conservative and should be reviewed and validated against authoritative references before clinical, regulatory, operational, or publication use.
+```text
+sigma = MRbar / 1.128
+UCL = mean + 3 * sigma
+LCL = mean - 3 * sigma
+```
 
-## References
+---
 
-- Anhøj J, Olesen AV. Run charts revisited: A simulation study of run chart rules for detection of non-random variation in health care processes. PLOS ONE. 2014.
-- Mohammed MA, Worthington P, Woodall WH. Plotting basic control charts: tutorial notes for healthcare practitioners. Quality and Safety in Health Care. 2008.
-- Provost LP, Murray SK. The Health Care Data Guide: Learning from Data for Improvement.
-- Wheeler DJ. Understanding Variation: The Key to Managing Chaos.
+## Moving Range chart
+
+```python
+chart = qic(df, x="month", y="value", chart="mr")
+chart.figure
+chart.table
+```
+
+The MR chart uses:
+
+```text
+CL = MRbar
+LCL = 0
+UCL = 3.267 * MRbar
+```
+
+---
+
+## Pareto chart
+
+```python
+from pyqicharts import paretochart
+
+chart = paretochart(df, category="incident_type")
+chart.figure
+chart.table
+```
+
+For table-only workflows:
+
+```python
+from pyqicharts import pareto_table
+
+pareto = pareto_table(df, category="incident_type")
+```
+
+---
+
+## Excel and Power BI support
+
+Version 0.2.0 introduces table-first APIs designed for applications that prefer tabular outputs.
+
+### Excel-friendly output
+
+```python
+from pyqicharts import qic_table
+
+output = qic_table(df, x="month", y="value", chart="run")
+```
+
+This returns a pandas DataFrame containing columns such as:
+
+```text
+month, value, chart, centre, lcl, ucl, moving_range, signal, signal_rule
+```
+
+That makes the output suitable for:
+
+- Excel Python
+- Excel Desktop workflows
+- xlwings-based integrations
+- CSV export
+- dashboard pipelines
+
+### Power BI-friendly output
+
+Power BI Python visuals provide a DataFrame called `dataset`.
+
+```python
+from pyqicharts import qic
+
+chart = qic(dataset, x="month", y="value", chart="i")
+chart.figure
+```
+
+For Power BI transformations or calculated tables:
+
+```python
+from pyqicharts import qic_table
+
+result = qic_table(dataset, x="month", y="value", chart="i")
+```
+
+---
+
+## Design principles
+
+`pyqicharts` separates:
+
+1. **Statistical calculations**
+2. **Table outputs**
+3. **Matplotlib visualisation**
+
+This is intentional. It allows the same statistical engine to support:
+
+- Jupyter notebooks
+- Python scripts
+- Excel Online
+- Excel Desktop
+- Power BI Desktop
+- Power BI Service, where supported
+- Future web or API integrations
+
+---
+
+## Example output table
+
+```text
+month | value | chart | centre | lcl | ucl | moving_range | signal | signal_rule
+```
+
+This makes it easy to create charts natively in Excel or Power BI while using pyqicharts for the statistical calculations.
+
+---
+
+## Roadmap
+
+### v0.3.0
+
+- C charts
+- P charts
+- U charts
+- Better signal annotations
+- More robust Anhøj threshold validation
+
+### v0.4.0
+
+- Xbar and S charts
+- Additional Shewhart/Nelson-style rules
+- Improved chart styling
+
+### v0.5.0
+
+- G and T charts
+- Example healthcare datasets
+- Documentation site
+
+### v1.0.0
+
+- Stable API
+- Validated examples against published references
+- Full documentation
+- Production-ready release
+
+---
+
+## Disclaimer
+
+This software is provided for quality improvement, process monitoring, education, and research purposes. Users are responsible for validating outputs and ensuring suitability for their intended use. The software is provided without warranty under the MIT License.
+
+---
 
 ## License
 
-MIT License. See `LICENSE` for details.
+MIT License.
+
+Copyright © 2026 Assegai Studios Ltd.

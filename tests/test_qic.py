@@ -1,25 +1,42 @@
+import matplotlib
+matplotlib.use("Agg")
+
 import pandas as pd
 
 from pyqicharts import paretochart, qic
 
 
-def test_qic_run_returns_summary():
-    df = pd.DataFrame({"week": range(1, 7), "value": [1, 2, 3, 4, 5, 6]})
-    result = qic(df, x="week", y="value", chart="run")
-    summary = result.summary()
-    assert summary["chart"] == "run"
-    assert summary["n"] == 6
-    assert "runs" in summary
+def sample_df():
+    return pd.DataFrame({
+        "month": range(1, 7),
+        "value": [10, 11, 10, 13, 12, 14],
+        "category": ["A", "B", "A", "C", "A", "B"],
+    })
+
+
+def test_qic_run_returns_result():
+    result = qic(sample_df(), x="month", y="value", chart="run")
+    assert result.chart == "run"
+    assert result.anhoej is not None
+    assert result.figure is not None
+    assert result.table is not None
 
 
 def test_qic_i_returns_limits():
-    df = pd.DataFrame({"week": range(1, 7), "value": [10, 11, 9, 10, 10, 12]})
-    result = qic(df, x="week", y="value", chart="i")
+    result = qic(sample_df(), x="month", y="value", chart="i")
+    assert result.chart == "i"
+    assert result.ucl is not None
     assert result.lcl is not None
+
+
+def test_qic_mr_returns_result():
+    result = qic(sample_df(), x="month", y="value", chart="mr")
+    assert result.chart == "mr"
+    assert result.lcl == 0.0
     assert result.ucl is not None
 
 
-def test_paretochart_counts_categories():
-    df = pd.DataFrame({"type": ["A", "B", "A", "C", "A"]})
-    result = paretochart(df, category="type")
-    assert result.table.loc[0, "count"] == 3
+def test_paretochart_returns_table():
+    result = paretochart(sample_df(), category="category")
+    assert result.table["count"].sum() == 6
+    assert result.figure is not None

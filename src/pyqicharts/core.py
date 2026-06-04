@@ -1,173 +1,130 @@
-"""Main qic API for run and control charts."""
+"""Chart construction functions for pyqicharts."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from pyqicharts.rules import AnhoejResult, anhoej_rules, shewhart_rule
-
-ChartType = Literal["run", "i"]
+from .rules import AnhoejResult, anhoej_rules
+from .tables import qic_table
 
 
 @dataclass
 class QicResult:
-    """Container returned by :func:`qic`."""
+    """Result returned by :func:`qic`."""
 
     data: pd.DataFrame
     chart: str
     x: str
     y: str
     centre: float
-    lcl: float | None
-    ucl: float | None
-    anhoej: AnhoejResult | None
+    lcl: Optional[float]
+    ucl: Optional[float]
+    anhoej: Optional[AnhoejResult]
     signals: pd.Series
-    figure: plt.Figure
-    axes: plt.Axes
+    table: pd.DataFrame
+    figure: object
+    axes: object
 
-    def summary(self) -> dict[str, object]:
-        """Return a small dictionary of chart diagnostics."""
+    def summary(self) -> dict:
+        """Return a simple dictionary summary suitable for logs/reports."""
 
-        output: dict[str, object] = {
+        out = {
             "chart": self.chart,
-            "n": int(self.data[self.y].notna().sum()),
             "centre": self.centre,
             "lcl": self.lcl,
             "ucl": self.ucl,
-            "n_signals": int(self.signals.sum()),
+            "signals": int(self.signals.sum()),
         }
         if self.anhoej is not None:
-            output.update(
-                {
-                    "runs": self.anhoej.runs,
-                    "crossings": self.anhoej.crossings,
-                    "longest_run": self.anhoej.longest_run,
-                    "signal_long_run": self.anhoej.signal_long_run,
-                    "signal_few_crossings": self.anhoej.signal_few_crossings,
-                }
-            )
-        return output
+            out["anhoej"] = self.anhoej
+        return out
+
+    def show(self):
+        """Display the matplotlib figure."""
+
+        plt.show()
 
 
-def _ordered_frame(data: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
-    if x not in data.columns:
-        raise ValueError(f"x column not found: {x}")
-    if y not in data.columns:
-        raise ValueError(f"y column not found: {y}")
-    out = data[[x, y]].copy()
-    out = out.dropna(subset=[y]).sort_values(x).reset_index(drop=True)
-    if out.empty:
-        raise ValueError("data must contain at least one non-missing y value")
-    return out
-
-
-def _individuals_limits(values: pd.Series) -> tuple[float, float, float]:
-    arr = values.to_numpy(dtype=float)
-    centre = float(np.mean(arr))
-    if arr.size < 2:
-        return centre, centre, centre
-    moving_ranges = np.abs(np.diff(arr))
-    mr_bar = float(np.mean(moving_ranges))
-    sigma = mr_bar / 1.128 if mr_bar > 0 else 0.0
-    lcl = centre - 3 * sigma
-    ucl = centre + 3 * sigma
-    return centre, lcl, ucl
+def _normalise_chart_name(chart: str) -> str:
+    key = chart.lower().replace("-", "_").replace(" ", "_")
+    if key == "individuals":
+        key = "i"
+    if key in {"movingrange", "moving_range"}:
+        key = "mr"
+    return key
 
 
 def qic(
     data: pd.DataFrame,
     x: str,
     y: str,
-    chart: ChartType = "run",
+    chart: str = "run",
     title: str | None = None,
-    centre: float | None = None,
-    ax: plt.Axes | None = None,
+    figsize: tuple[int, int] = (10, 5),
 ) -> QicResult:
-    """Create a Quality Improvement chart.
+    """Create a QI chart.
 
-    Parameters
-    ----------
-    data:
-        Input data as a pandas DataFrame.
-    x:
-        Time/order column.
-    y:
-        Measurement column.
-    chart:
-        ``"run"`` for a run chart or ``"i"`` for an individuals chart.
-    title:
-        Optional chart title.
-    centre:
-        Optional centre line. Defaults to median for run charts and mean for
-        individuals charts.
-    ax:
-        Optional matplotlib axes.
-
-    Returns
-    -------
-    QicResult
-        Chart, diagnostics, limits, and underlying data.
+    Supported chart values in v0.2.0:
+    - ``"run"``
+    - ``"i"`` or ``"individuals"``
+    - ``"mr"`` or ``"moving_range"``
     """
 
-    df = _ordered_frame(data, x, y)
-    values = df[y].astype(float)
-    chart = chart.lower()  # type: ignore[assignment]
+    chart_key = _normalise_chart_name(chart)
+    table = qic_table(data=data, x=x, y=y, chart=chart_key)
 
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=figsize)
+
+    if chart_key == "mr":
+        plot_y = "moving_range"
+        ylabel = f"Moving range of {y}"
     else:
-        fig = ax.figure
+        plot_y = y
+        ylabel = y
 
-    if chart == "run":
-        centre_line = float(np.median(values) if centre is None else centre)
-        anhoej = anhoej_rules(values, centre_line)
-        lcl = ucl = None
-        signals = pd.Series(False, index=df.index)
-    elif chart == "i":
-        calculated_centre, lcl, ucl = _individuals_limits(values)
-        centre_line = float(calculated_centre if centre is None else centre)
-        if centre is not None:
-            sigma = (ucl - calculated_centre) / 3 if ucl is not None else 0
-            lcl = centre_line - 3 * sigma
-            ucl = centre_line + 3 * sigma
-        anhoej = None
-        sigma_for_rule = (ucl - centre_line) / 3 if ucl is not None else 0
-        signals = shewhart_rule(values, centre_line, sigma_for_rule)
-        signals.index = df.index
-    else:
-        raise ValueError("chart must currently be one of: 'run', 'i'")
+    ax.plot(table[x], table[plot_y], marker="o", linewidth=1.8)
 
-    ax.plot(df[x], df[y], marker="o")
-    ax.axhline(centre_line, linestyle="--", linewidth=1.5, label="Centre")
+    signal_rows = table[table["signal"]]
+    if not signal_rows.empty:
+        ax.scatter(signal_rows[x], signal_rows[plot_y], s=80, marker="o", zorder=5)
 
-    if lcl is not None and ucl is not None:
+    centre = float(table["centre"].dropna().iloc[0]) if table["centre"].notna().any() else np.nan
+    lcl = float(table["lcl"].dropna().iloc[0]) if table["lcl"].notna().any() else None
+    ucl = float(table["ucl"].dropna().iloc[0]) if table["ucl"].notna().any() else None
+
+    if centre == centre:
+        ax.axhline(centre, linestyle="--", linewidth=1.3, label="Centre")
+    if lcl is not None:
         ax.axhline(lcl, linestyle=":", linewidth=1.2, label="LCL")
+    if ucl is not None:
         ax.axhline(ucl, linestyle=":", linewidth=1.2, label="UCL")
-        signal_points = df.loc[signals]
-        if not signal_points.empty:
-            ax.scatter(signal_points[x], signal_points[y], marker="x", s=90, label="Signal")
 
     ax.set_xlabel(x)
-    ax.set_ylabel(y)
-    ax.set_title(title or f"{chart.upper()} chart of {y}")
-    ax.legend(loc="best")
+    ax.set_ylabel(ylabel)
+    ax.set_title(title or f"{chart_key.upper()} chart of {y}")
+    ax.grid(True, alpha=0.25)
+    if chart_key in {"i", "mr"}:
+        ax.legend(loc="best")
     fig.tight_layout()
 
+    anhoej = anhoej_rules(table[y]) if chart_key == "run" else None
+
     return QicResult(
-        data=df,
-        chart=chart,
+        data=data.copy(),
+        chart=chart_key,
         x=x,
         y=y,
-        centre=centre_line,
+        centre=centre,
         lcl=lcl,
         ucl=ucl,
         anhoej=anhoej,
-        signals=signals,
+        signals=table["signal"],
+        table=table,
         figure=fig,
         axes=ax,
     )

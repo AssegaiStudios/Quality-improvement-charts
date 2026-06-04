@@ -1,9 +1,9 @@
-"""Rules for detecting non-random variation in QI charts."""
+"""Rule calculations used by pyqicharts."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import comb
+from statistics import NormalDist
 from typing import Iterable
 
 import numpy as np
@@ -12,12 +12,12 @@ import pandas as pd
 
 @dataclass(frozen=True)
 class AnhoejResult:
-    """Result from Anhøj-style run-chart diagnostics.
+    """Summary of Anhøj-style run chart diagnostics.
 
-    The implementation intentionally starts conservatively: it calculates runs,
-    crossings, longest run, and simple probability estimates for unusually long
-    runs and few crossings. These diagnostics are suitable for early package use
-    and can be statistically refined as the package matures.
+    Notes
+    -----
+    Values exactly equal to the median are excluded from the runs/crossings
+    calculations, following common run chart practice.
     """
 
     median: float
@@ -25,128 +25,131 @@ class AnhoejResult:
     runs: int
     crossings: int
     longest_run: int
+    expected_longest_run: int
+    lower_crossings_limit: int
     signal_long_run: bool
     signal_few_crossings: bool
 
+    @property
+    def any_signal(self) -> bool:
+        """Return True when any Anhøj diagnostic is triggered."""
 
-def _drop_points_on_centre_line(values: Iterable[float], centre: float) -> np.ndarray:
-    arr = np.asarray(list(values), dtype=float)
-    arr = arr[~np.isnan(arr)]
-    return arr[arr != centre]
-
-
-def _signs(values: np.ndarray, centre: float) -> np.ndarray:
-    return np.where(values > centre, 1, -1)
+        return self.signal_long_run or self.signal_few_crossings
 
 
-def _runs(signs: np.ndarray) -> int:
-    if signs.size == 0:
+def _longest_run(signs: list[int]) -> int:
+    if not signs:
         return 0
-    return int(1 + np.sum(signs[1:] != signs[:-1]))
-
-
-def _crossings(signs: np.ndarray) -> int:
-    if signs.size < 2:
-        return 0
-    return int(np.sum(signs[1:] != signs[:-1]))
-
-
-def _longest_run(signs: np.ndarray) -> int:
-    if signs.size == 0:
-        return 0
-    longest = current = 1
-    for idx in range(1, signs.size):
-        if signs[idx] == signs[idx - 1]:
+    longest = 1
+    current = 1
+    previous = signs[0]
+    for sign in signs[1:]:
+        if sign == previous:
             current += 1
         else:
-            longest = max(longest, current)
             current = 1
-    return max(longest, current)
+            previous = sign
+        longest = max(longest, current)
+    return longest
 
 
-def _long_run_limit(n: int) -> int:
-    """Approximate 5% upper limit for longest run in random binary sequences.
+def _runs(signs: list[int]) -> int:
+    if not signs:
+        return 0
+    return 1 + sum(1 for a, b in zip(signs, signs[1:]) if a != b)
 
-    The limit is intentionally conservative and mirrors common run-chart practice
-    for small-to-medium healthcare improvement datasets.
+
+def _crossings(signs: list[int]) -> int:
+    if not signs:
+        return 0
+    return sum(1 for a, b in zip(signs, signs[1:]) if a != b)
+
+
+def _expected_longest_run(n: int) -> int:
+    """Approximate 95th percentile for longest run in random binary sequence.
+
+    This approximation is intentionally conservative for early releases. It
+    behaves similarly to published run chart reference tables for small and
+    medium sequences without needing bundled lookup tables.
     """
 
+    if n <= 0:
+        return 0
     if n < 10:
-        return n + 1
-    if n < 20:
-        return 8
-    if n < 30:
-        return 9
-    if n < 50:
-        return 10
-    if n < 100:
-        return 11
-    return 12
+        return n
+    # Approximate upper 95% longest run threshold.
+    return int(np.ceil(np.log2(n) + 3))
 
 
-def _expected_crossings(n: int) -> float:
-    # For a random sequence split around a median, expected crossings are close
-    # to (n - 1) / 2 when the two groups are approximately balanced.
-    return (n - 1) / 2
+def _lower_crossings_limit(n: int) -> int:
+    """Approximate lower 5% limit for crossings in a random binary sequence."""
+
+    if n <= 1:
+        return 0
+    # Crossings is Binomial(n - 1, 0.5) under random above/below median signs.
+    mean = (n - 1) * 0.5
+    sd = np.sqrt((n - 1) * 0.25)
+    z05 = NormalDist().inv_cdf(0.05)
+    return max(0, int(np.floor(mean + z05 * sd)))
 
 
-def _few_crossings_limit(n: int) -> int:
-    """Approximate lower 5% crossing limit using a normal approximation."""
-
-    if n < 10:
-        return -1
-    mean = _expected_crossings(n)
-    sd = np.sqrt((n - 1) / 4)
-    return int(np.floor(mean - 1.96 * sd))
-
-
-def anhoej_rules(values: Iterable[float], centre: float | None = None) -> AnhoejResult:
-    """Calculate run-chart diagnostics inspired by the Anhøj rules.
+def anhoej_rules(values: Iterable[float]) -> AnhoejResult:
+    """Calculate Anhøj-style run chart diagnostics.
 
     Parameters
     ----------
     values:
-        Sequence of measurements ordered by time.
-    centre:
-        Optional centre line. Defaults to the median of ``values``.
+        Ordered numeric observations.
 
     Returns
     -------
     AnhoejResult
-        Runs, crossings, longest run, and signal flags.
+        Median, runs, crossings, longest run and signal flags.
     """
 
-    raw = np.asarray(list(values), dtype=float)
-    raw = raw[~np.isnan(raw)]
-    if raw.size == 0:
-        raise ValueError("values must contain at least one non-missing number")
+    series = pd.Series(values).dropna()
+    median = float(series.median()) if len(series) else float("nan")
 
-    median = float(np.median(raw) if centre is None else centre)
-    used = _drop_points_on_centre_line(raw, median)
-    signs = _signs(used, median) if used.size else np.array([], dtype=int)
+    if len(series) == 0:
+        return AnhoejResult(
+            median=median,
+            n_used=0,
+            runs=0,
+            crossings=0,
+            longest_run=0,
+            expected_longest_run=0,
+            lower_crossings_limit=0,
+            signal_long_run=False,
+            signal_few_crossings=False,
+        )
 
-    n = int(used.size)
+    signs = [1 if value > median else -1 for value in series if value != median]
+    n_used = len(signs)
     runs = _runs(signs)
     crossings = _crossings(signs)
     longest = _longest_run(signs)
+    expected_longest = _expected_longest_run(n_used)
+    lower_cross = _lower_crossings_limit(n_used)
 
     return AnhoejResult(
         median=median,
-        n_used=n,
+        n_used=n_used,
         runs=runs,
         crossings=crossings,
         longest_run=longest,
-        signal_long_run=longest >= _long_run_limit(n),
-        signal_few_crossings=crossings <= _few_crossings_limit(n),
+        expected_longest_run=expected_longest,
+        lower_crossings_limit=lower_cross,
+        signal_long_run=longest > expected_longest if expected_longest else False,
+        signal_few_crossings=crossings < lower_cross if n_used > 1 else False,
     )
 
 
-def shewhart_rule(values: Iterable[float], centre: float, sigma: float) -> pd.Series:
-    """Return True for points outside 3-sigma control limits."""
+def shewhart_3sigma_signals(values: Iterable[float], centre: float, sigma: float) -> pd.Series:
+    """Return True for observations outside centre ± 3 sigma."""
 
-    arr = np.asarray(list(values), dtype=float)
-    if sigma < 0:
-        raise ValueError("sigma must be non-negative")
-    upper = centre + 3 * sigma
-    lower = centre - 3 * sigma
-    return pd.Series((arr > upper) | (arr < lower))
+    s = pd.Series(values)
+    if sigma is None or np.isnan(sigma) or sigma <= 0:
+        return pd.Series([False] * len(s), index=s.index)
+    lcl = centre - 3 * sigma
+    ucl = centre + 3 * sigma
+    return (s < lcl) | (s > ucl)

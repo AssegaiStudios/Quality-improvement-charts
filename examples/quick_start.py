@@ -1,31 +1,22 @@
 import pandas as pd
-from pyqicharts import paretochart, qic
+from pyqicharts import qic, paretochart
 
+df = pd.DataFrame({
+    "month": range(1, 13),
+    "value": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
+    "incident_type": [
+        "Medication", "Falls", "Falls", "Pressure ulcer",
+        "Medication", "Medication", "Infection", "Falls",
+        "Medication", "Infection", "Falls", "Medication",
+    ],
+})
 
-df = pd.DataFrame(
-    {
-        "month": range(1, 13),
-        "infections": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
-    }
-)
+run_chart = qic(df, x="month", y="value", chart="run")
+i_chart = qic(df, x="month", y="value", chart="i")
+mr_chart = qic(df, x="month", y="value", chart="mr")
+pareto = paretochart(df, category="incident_type")
 
-run_result = qic(df, x="month", y="infections", chart="run")
-print(run_result.summary())
-
-ichart_result = qic(df, x="month", y="infections", chart="i")
-print(ichart_result.summary())
-
-causes = pd.DataFrame(
-    {
-        "incident_type": [
-            "Medication",
-            "Falls",
-            "Medication",
-            "Pressure ulcer",
-            "Falls",
-            "Medication",
-        ]
-    }
-)
-pareto_result = paretochart(causes, category="incident_type")
-print(pareto_result.table)
+print(run_chart.summary())
+print(i_chart.table.head())
+print(mr_chart.table.head())
+print(pareto.table)
