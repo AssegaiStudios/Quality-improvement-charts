@@ -1,27 +1,23 @@
 """Chart construction functions for pyqicharts."""
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 from .rules import AnhoejResult, anhoej_rules
 from .tables import qic_table
-
+from .themes import get_theme
 
 @dataclass
 class QicResult:
-    """Result returned by :func:`qic`."""
-
+    """Result returned by qic()."""
     data: pd.DataFrame
     chart: str
     x: str
     y: str
     centre: float
+    centre_label: str
     lcl: Optional[float]
     ucl: Optional[float]
     anhoej: Optional[AnhoejResult]
@@ -29,102 +25,42 @@ class QicResult:
     table: pd.DataFrame
     figure: object
     axes: object
-
     def summary(self) -> dict:
-        """Return a simple dictionary summary suitable for logs/reports."""
-
-        out = {
-            "chart": self.chart,
-            "centre": self.centre,
-            "lcl": self.lcl,
-            "ucl": self.ucl,
-            "signals": int(self.signals.sum()),
-        }
-        if self.anhoej is not None:
-            out["anhoej"] = self.anhoej
+        out = {"chart": self.chart, "centre_label": self.centre_label, "centre": self.centre, "lcl": self.lcl, "ucl": self.ucl, "signals": int(self.signals.sum())}
+        if self.anhoej is not None: out["anhoej"] = self.anhoej
         return out
-
     def show(self):
-        """Display the matplotlib figure."""
-
         plt.show()
-
 
 def _normalise_chart_name(chart: str) -> str:
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    if key == "individuals":
-        key = "i"
-    if key in {"movingrange", "moving_range"}:
-        key = "mr"
-    return key
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u"}.get(key, key)
 
+def _scalar_or_none(series: pd.Series) -> float | None:
+    non_null = series.dropna()
+    return None if len(non_null) == 0 else float(non_null.iloc[0])
 
-def qic(
-    data: pd.DataFrame,
-    x: str,
-    y: str,
-    chart: str = "run",
-    title: str | None = None,
-    figsize: tuple[int, int] = (10, 5),
-) -> QicResult:
-    """Create a QI chart.
+def qic(data: pd.DataFrame, x: str, y: str, chart: str = "run", denominator: str | None = None, title: str | None = None, figsize: tuple[int,int] = (10,5), theme: str = "default") -> QicResult:
+    """Create a QI/SPC chart.
 
-    Supported chart values in v0.2.0:
-    - ``"run"``
-    - ``"i"`` or ``"individuals"``
-    - ``"mr"`` or ``"moving_range"``
+    Version 0.3.0 supports run, I, MR, C, P and U charts. P and U charts
+    require a denominator column.
     """
-
-    chart_key = _normalise_chart_name(chart)
-    table = qic_table(data=data, x=x, y=y, chart=chart_key)
-
+    chart_key = _normalise_chart_name(chart); style = get_theme(theme)
+    table = qic_table(data=data, x=x, y=y, chart=chart_key, denominator=denominator)
     fig, ax = plt.subplots(figsize=figsize)
-
-    if chart_key == "mr":
-        plot_y = "moving_range"
-        ylabel = f"Moving range of {y}"
-    else:
-        plot_y = y
-        ylabel = y
-
-    ax.plot(table[x], table[plot_y], marker="o", linewidth=1.8)
-
+    ylabel = y
+    if chart_key == "mr": ylabel = f"Moving range of {y}"
+    elif chart_key == "p": ylabel = f"Proportion of {y}"
+    elif chart_key == "u": ylabel = f"Rate of {y}"
+    ax.plot(table[x], table["plot_value"], marker="o", linewidth=1.8, color=style.line, markerfacecolor=style.marker, markeredgecolor=style.marker)
     signal_rows = table[table["signal"]]
     if not signal_rows.empty:
-        ax.scatter(signal_rows[x], signal_rows[plot_y], s=80, marker="o", zorder=5)
-
-    centre = float(table["centre"].dropna().iloc[0]) if table["centre"].notna().any() else np.nan
-    lcl = float(table["lcl"].dropna().iloc[0]) if table["lcl"].notna().any() else None
-    ucl = float(table["ucl"].dropna().iloc[0]) if table["ucl"].notna().any() else None
-
-    if centre == centre:
-        ax.axhline(centre, linestyle="--", linewidth=1.3, label="Centre")
-    if lcl is not None:
-        ax.axhline(lcl, linestyle=":", linewidth=1.2, label="LCL")
-    if ucl is not None:
-        ax.axhline(ucl, linestyle=":", linewidth=1.2, label="UCL")
-
-    ax.set_xlabel(x)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title or f"{chart_key.upper()} chart of {y}")
-    ax.grid(True, alpha=0.25)
-    if chart_key in {"i", "mr"}:
-        ax.legend(loc="best")
-    fig.tight_layout()
-
+        ax.scatter(signal_rows[x], signal_rows["plot_value"], s=90, color=style.signal, marker="o", zorder=5, label="Signal")
+    centre = _scalar_or_none(table["centre"]); lcl = _scalar_or_none(table["lcl"]); ucl = _scalar_or_none(table["ucl"]); centre_label = str(table["centre_label"].iloc[0]) if len(table) else "Centre"
+    if centre is not None and not np.isnan(centre): ax.axhline(centre, linestyle="--", linewidth=1.4, color=style.centre, label=centre_label)
+    if lcl is not None and not np.isnan(lcl): ax.axhline(lcl, linestyle=":", linewidth=1.2, color=style.limits, label="LCL")
+    if ucl is not None and not np.isnan(ucl): ax.axhline(ucl, linestyle=":", linewidth=1.2, color=style.limits, label="UCL")
+    ax.set_xlabel(x); ax.set_ylabel(ylabel); ax.set_title(title or f"{chart_key.upper()} chart of {y}"); ax.grid(True, alpha=style.grid_alpha); ax.legend(loc="best"); fig.tight_layout()
     anhoej = anhoej_rules(table[y]) if chart_key == "run" else None
-
-    return QicResult(
-        data=data.copy(),
-        chart=chart_key,
-        x=x,
-        y=y,
-        centre=centre,
-        lcl=lcl,
-        ucl=ucl,
-        anhoej=anhoej,
-        signals=table["signal"],
-        table=table,
-        figure=fig,
-        axes=ax,
-    )
+    return QicResult(data.copy(), chart_key, x, y, centre if centre is not None else float("nan"), centre_label, lcl, ucl, anhoej, table["signal"], table, fig, ax)
