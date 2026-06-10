@@ -2,6 +2,7 @@
 from __future__ import annotations
 import numpy as np
 import pandas as pd
+from .nhs_rules import NhsRuleConfig, nhs_xmr_signals
 from .rules import anhoej_rules
 
 def _ordered_numeric(data: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
@@ -23,16 +24,26 @@ def _chart_key(chart: str) -> str:
     key = chart.lower().replace("-", "_").replace(" ", "_")
     return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u"}.get(key, key)
 
-def qic_table(data: pd.DataFrame, x: str, y: str, chart: str = "run", denominator: str | None = None) -> pd.DataFrame:
+def qic_table(
+    data: pd.DataFrame,
+    x: str,
+    y: str,
+    chart: str = "run",
+    denominator: str | None = None,
+    improvement: str | None = None,
+    shift_points: int = 8,
+    trend_points: int = 6,
+) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 0.3.0 supports run, I, MR, C, P and U charts. P and U charts
-    require a denominator column.
+    Version 0.4.0 supports run, I, MR, C, P and U charts. P and U charts
+    require a denominator column. Individuals charts include NHS-style
+    special cause fields for points outside limits, shifts and trends.
     """
     chart_key = _chart_key(chart)
     out = _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
-    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.3.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
+    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.4.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
     out["chart"] = chart_key
     if chart_key == "run":
         rules = anhoej_rules(out[y]); out["plot_value"] = out[y]; out["centre"] = rules.median; out["centre_label"] = "Median"
@@ -43,10 +54,11 @@ def qic_table(data: pd.DataFrame, x: str, y: str, chart: str = "run", denominato
         values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan
         sigma = mrbar / 1.128 if mrbar == mrbar else np.nan; centre = float(values.mean()) if len(values) else np.nan
         lcl = centre - 3*sigma if sigma == sigma else np.nan; ucl = centre + 3*sigma if sigma == sigma else np.nan
-        signal = ((values < lcl) | (values > ucl)) if sigma == sigma else pd.Series(False, index=out.index)
         out["plot_value"] = values; out["centre"] = centre; out["centre_label"] = "Mean"; out["lcl"] = lcl; out["ucl"] = ucl
-        out["moving_range"] = mr; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Shewhart 3-sigma", "")
-        out["mrbar"] = mrbar; out["sigma"] = sigma; return out
+        nhs = nhs_xmr_signals(values, centre, lcl, ucl, improvement, NhsRuleConfig(shift_points, trend_points))
+        out["moving_range"] = mr; out["signal"] = nhs["special_cause"].astype(bool); out["signal_rule"] = nhs["special_cause_rule"]
+        out["mrbar"] = mrbar; out["sigma"] = sigma
+        return pd.concat([out, nhs], axis=1)
     if chart_key == "mr":
         values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan
         ucl = 3.267 * mrbar if mrbar == mrbar else np.nan; signal = (mr > ucl) if mrbar == mrbar else pd.Series(False, index=out.index)

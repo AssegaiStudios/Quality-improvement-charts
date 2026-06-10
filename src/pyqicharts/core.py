@@ -40,14 +40,36 @@ def _scalar_or_none(series: pd.Series) -> float | None:
     non_null = series.dropna()
     return None if len(non_null) == 0 else float(non_null.iloc[0])
 
-def qic(data: pd.DataFrame, x: str, y: str, chart: str = "run", denominator: str | None = None, title: str | None = None, figsize: tuple[int,int] = (10,5), theme: str = "default") -> QicResult:
+def qic(
+    data: pd.DataFrame,
+    x: str,
+    y: str,
+    chart: str = "run",
+    denominator: str | None = None,
+    title: str | None = None,
+    figsize: tuple[int,int] = (10,5),
+    theme: str = "default",
+    improvement: str | None = None,
+    shift_points: int = 8,
+    trend_points: int = 6,
+) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 0.3.0 supports run, I, MR, C, P and U charts. P and U charts
-    require a denominator column.
+    Version 0.4.0 supports run, I, MR, C, P and U charts. P and U charts
+    require a denominator column. Individuals charts include NHS-style
+    special cause colouring and interpretation.
     """
     chart_key = _normalise_chart_name(chart); style = get_theme(theme)
-    table = qic_table(data=data, x=x, y=y, chart=chart_key, denominator=denominator)
+    table = qic_table(
+        data=data,
+        x=x,
+        y=y,
+        chart=chart_key,
+        denominator=denominator,
+        improvement=improvement,
+        shift_points=shift_points,
+        trend_points=trend_points,
+    )
     fig, ax = plt.subplots(figsize=figsize)
     ylabel = y
     if chart_key == "mr": ylabel = f"Moving range of {y}"
@@ -56,7 +78,15 @@ def qic(data: pd.DataFrame, x: str, y: str, chart: str = "run", denominator: str
     ax.plot(table[x], table["plot_value"], marker="o", linewidth=1.8, color=style.line, markerfacecolor=style.marker, markeredgecolor=style.marker)
     signal_rows = table[table["signal"]]
     if not signal_rows.empty:
-        ax.scatter(signal_rows[x], signal_rows["plot_value"], s=90, color=style.signal, marker="o", zorder=5, label="Signal")
+        if "special_cause_type" in signal_rows:
+            plotted_labels = set()
+            for signal_type, rows in signal_rows.groupby("special_cause_type", dropna=False):
+                label = str(signal_type).title() if signal_type else "Signal"
+                color = str(rows["special_cause_colour"].iloc[0]) or style.signal
+                ax.scatter(rows[x], rows["plot_value"], s=90, color=color, marker="o", zorder=5, label=None if label in plotted_labels else label)
+                plotted_labels.add(label)
+        else:
+            ax.scatter(signal_rows[x], signal_rows["plot_value"], s=90, color=style.signal, marker="o", zorder=5, label="Signal")
     centre = _scalar_or_none(table["centre"]); lcl = _scalar_or_none(table["lcl"]); ucl = _scalar_or_none(table["ucl"]); centre_label = str(table["centre_label"].iloc[0]) if len(table) else "Centre"
     if centre is not None and not np.isnan(centre): ax.axhline(centre, linestyle="--", linewidth=1.4, color=style.centre, label=centre_label)
     if lcl is not None and not np.isnan(lcl): ax.axhline(lcl, linestyle=":", linewidth=1.2, color=style.limits, label="LCL")

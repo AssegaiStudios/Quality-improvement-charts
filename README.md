@@ -2,55 +2,29 @@
 
 Quality Improvement (QI) and Statistical Process Control (SPC) charts for Python.
 
-Inspired by the excellent R package **qicharts2**, pyqicharts aims to provide a modern Python-first toolkit for run charts, control charts, quality improvement analytics, and reporting workflows across Python, Jupyter, Excel, and Power BI.
-
----
+pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI charting. It is inspired by qicharts2, NHS Making Data Count, Anhøj run chart rules, and Shewhart SPC methodology.
 
 ## Current Status
 
-**Version:** 0.3.0
+**Version:** 0.4.0
 
-pyqicharts is currently in active development.
+pyqicharts is currently in active development. The project already provides:
 
-The project already provides:
-
-- Run Charts
-- Individuals (I) Charts
-- Moving Range (MR) Charts
-- C Charts
-- P Charts
-- U Charts
-- Pareto Charts
+- Run charts
+- Individuals / XmR charts
+- Moving range charts
+- C charts
+- P charts
+- U charts
+- Pareto charts
 - Anhøj-style run chart diagnostics
-- Shewhart 3-sigma signal detection
+- NHS-style XmR special cause detection
+- Direction-of-improvement interpretation
 - Excel-friendly table outputs
 - Power BI integration examples
 - Built-in chart themes
 
-Future releases will focus on NHS-style SPC signal interpretation, annotation, reporting, and advanced control chart functionality.
-
----
-
-## Why pyqicharts?
-
-Many Quality Improvement and SPC practitioners use tools such as:
-
-- qicharts2 (R)
-- NHS SPC Excel tools
-- Commercial SPC software
-
-Python has historically lacked an equivalent open-source package focused on practical quality improvement and healthcare analytics.
-
-pyqicharts aims to bridge that gap by providing:
-
-- Robust statistical calculations
-- Clear visualisations
-- Excel-friendly outputs
-- Power BI integration
-- Healthcare-focused SPC functionality
-- Open-source development
-
----
+Future releases will focus on baselines, process-change handling, targets, interventions, reporting, and advanced healthcare SPC charts.
 
 ## Installation
 
@@ -62,15 +36,8 @@ For development:
 
 ```bash
 pip install -e .[dev]
-```
-
-Run tests:
-
-```bash
 pytest
 ```
-
----
 
 ## Quick Start
 
@@ -80,40 +47,102 @@ from pyqicharts import qic
 
 df = pd.DataFrame({
     "month": range(1, 13),
-    "value": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19]
+    "value": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
 })
 
 chart = qic(
     data=df,
     x="month",
     y="value",
-    chart="run"
+    chart="run",
 )
 
 chart.figure
 ```
 
----
+## NHS XmR Signals
+
+Version 0.4.0 adds NHS-style special cause fields for Individuals / XmR charts:
+
+- `outside_ucl`
+- `outside_lcl`
+- `shift`
+- `trend`
+- `special_cause`
+- `special_cause_rule`
+- `special_cause_direction`
+- `special_cause_type`
+- `special_cause_colour`
+- `special_cause_label`
+
+Use `improvement` to classify signals as improvement, concern, or neutral:
+
+```python
+chart = qic(
+    data=df,
+    x="month",
+    y="value",
+    chart="i",
+    improvement="low is good",
+)
+
+chart.table[[
+    "month",
+    "value",
+    "signal",
+    "special_cause_rule",
+    "special_cause_type",
+]]
+```
+
+Supported values are:
+
+```python
+improvement="high is good"
+improvement="low is good"
+```
+
+The implemented v0.4.0 rules are:
+
+- Rule 1: one point outside the control limits.
+- Shift: eight non-centre points above or below the centre line.
+- Trend: six consecutive increasing or decreasing points.
+
+## Table-First Outputs
+
+Statistical calculations can be accessed independently of visualisations:
+
+```python
+from pyqicharts import qic_table
+
+output = qic_table(
+    data=df,
+    x="month",
+    y="value",
+    chart="i",
+    improvement="high is good",
+)
+```
+
+This supports Excel Desktop, Excel Python, Power BI, CSV workflows, dashboards, and reporting pipelines.
 
 ## Supported Charts
 
 | Chart Type | Status |
-|------------|---------|
-| Run Chart | ✅ |
-| Individuals (I) Chart | ✅ |
-| Moving Range (MR) Chart | ✅ |
-| C Chart | ✅ |
-| P Chart | ✅ |
-| U Chart | ✅ |
-| Pareto Chart | ✅ |
-| Xbar Chart | Planned |
-| S Chart | Planned |
-| G Chart | Planned |
-| T Chart | Planned |
-| Risk-adjusted P′ Chart | Planned |
-| Risk-adjusted U′ Chart | Planned |
-
----
+|------------|--------|
+| Run chart | Supported |
+| Individuals / XmR chart | Supported |
+| Moving range chart | Supported |
+| C chart | Supported |
+| P chart | Supported |
+| U chart | Supported |
+| Pareto chart | Supported |
+| Xbar chart | Planned |
+| S chart | Planned |
+| G chart | Planned |
+| T chart | Planned |
+| Risk-adjusted P-prime chart | Planned |
+| Risk-adjusted U-prime chart | Planned |
 
 ## Themes
 
@@ -126,76 +155,25 @@ theme="publication"
 theme="dark"
 ```
 
----
-
-## Excel and Power BI
-
-pyqicharts is designed around a table-first architecture.
-
-Statistical calculations can be accessed independently of visualisations:
-
-```python
-from pyqicharts import qic_table
-
-output = qic_table(
-    data=df,
-    x="month",
-    y="value",
-    chart="i"
-)
-```
-
-This enables integration with Excel Desktop, Excel Python, Power BI, CSV export workflows, dashboards, and reporting pipelines.
-
----
-
-## NHS SPC Workbook Compatibility
-
-During development, an NHS SPC Excel workbook was analysed as a reference implementation.
-
-Future releases will incorporate validated functionality inspired by this workbook, including:
-
-- Special cause detection
-- Signal annotation
-- Shift detection
-- Trend detection
-- Baseline periods
-- Step changes
-- Target lines
-- Reporting and presentation features
-
-The goal is not to replicate the Excel workbook directly, but to provide equivalent functionality through a modern Python architecture.
-
----
-
 ## Roadmap
 
-### v0.4.0 – NHS XmR Signal Engine
-
-- Above-UCL detection
-- Below-LCL detection
-- Shift detection
-- Trend detection
-- Signal annotations
-- Signal colouring
-- Improved SPC interpretation
-
-### v0.5.0 – NHS XmR Feature Parity
+### v0.5.0 - Baselines, Targets, Interventions and Recalculation
 
 - Baseline periods
-- Step changes
+- Recalculation periods
 - Target lines
-- High-is-good / low-is-good logic
-- Special cause summary tables
+- Intervention markers
+- Step-change metadata
 
-### v0.6.0 – Reporting & Office Integration
+### v0.6.0 - Reporting and Office Integration
 
-- PowerPoint export
+- PNG export
 - Excel export helpers
-- Power BI templates
-- PNG export utilities
+- PowerPoint export helpers
+- Report bundles
+- Power BI-friendly tables
 
-### v1.0.0 – Stable Release
+### v1.0.0 - Stable Release
 
 - Stable public API
 - Comprehensive documentation
@@ -203,16 +181,8 @@ The goal is not to replicate the Excel workbook directly, but to provide equival
 - Reference validation
 - Production-ready release
 
----
-
-## Contributing
-
-Contributions, bug reports, feature requests, and suggestions are welcome.
-
----
-
 ## License
 
 MIT License
 
-Copyright © 2026 Assegai Studios Ltd.
+Copyright (c) 2026 Assegai Studios Ltd.
