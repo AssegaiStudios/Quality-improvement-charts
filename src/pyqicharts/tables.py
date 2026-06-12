@@ -5,6 +5,71 @@ import pandas as pd
 from .nhs_rules import NhsRuleConfig, nhs_xmr_signals
 from .rules import anhoej_rules
 
+
+def _point_to_position(point, x_values: pd.Series, n: int) -> int | None:
+    matches = x_values[x_values == point]
+    if len(matches):
+        return int(matches.index[0])
+    if isinstance(point, (int, np.integer)) and 1 <= int(point) <= n:
+        return int(point) - 1
+    return None
+
+
+def _segment_ids(out: pd.DataFrame, x: str, recalculation_points: list | None) -> pd.Series:
+    n = len(out)
+    starts = [0]
+    for point in recalculation_points or []:
+        pos = _point_to_position(point, out[x], n)
+        if pos is not None and 0 < pos < n:
+            starts.append(pos)
+    starts = sorted(set(starts))
+    segment = pd.Series(1, index=out.index, dtype=int)
+    for segment_id, start in enumerate(starts, start=1):
+        end = starts[segment_id] if segment_id < len(starts) else n
+        segment.iloc[start:end] = segment_id
+    return segment
+
+
+def _marker_labels(out: pd.DataFrame, x: str, markers: list[dict] | None) -> pd.Series:
+    labels = pd.Series("", index=out.index, dtype=object)
+    n = len(out)
+    for marker in markers or []:
+        point = marker.get("point") if isinstance(marker, dict) else None
+        pos = _point_to_position(point, out[x], n)
+        if pos is None:
+            continue
+        labels.iloc[pos] = str(marker.get("label", "")) if isinstance(marker, dict) else ""
+    return labels
+
+
+def _add_process_metadata(
+    out: pd.DataFrame,
+    x: str,
+    baseline_points: int | None,
+    recalculation_points: list | None,
+    target: float | int | None,
+    interventions: list[dict] | None,
+    step_changes: list[dict] | None,
+) -> pd.DataFrame:
+    out["point_index"] = np.arange(1, len(out) + 1)
+    out["baseline_period"] = out["point_index"] <= int(baseline_points) if baseline_points else False
+    out["baseline_label"] = np.where(out["baseline_period"], "Baseline", "")
+    out["segment_id"] = _segment_ids(out, x, recalculation_points)
+    out["segment_label"] = "Segment " + out["segment_id"].astype(str)
+    out["target"] = target if target is not None else np.nan
+    out["intervention_label"] = _marker_labels(out, x, interventions)
+    out["intervention"] = out["intervention_label"] != ""
+    out["step_change_label"] = _marker_labels(out, x, step_changes)
+    out["step_change"] = out["step_change_label"] != ""
+    return out
+
+
+def _segment_source(values: pd.Series, segment_index: pd.Index, baseline_points: int | None) -> pd.Series:
+    segment_values = values.loc[segment_index]
+    if baseline_points and int(segment_index[0]) == 0:
+        return segment_values.iloc[: int(baseline_points)]
+    return segment_values
+
 def _ordered_numeric(data: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
     if x not in data.columns: raise KeyError(f"x column not found: {x!r}")
     if y not in data.columns: raise KeyError(f"y column not found: {y!r}")
@@ -33,31 +98,51 @@ def qic_table(
     improvement: str | None = None,
     shift_points: int = 8,
     trend_points: int = 6,
+    baseline_points: int | None = None,
+    recalculation_points: list | None = None,
+    target: float | int | None = None,
+    interventions: list[dict] | None = None,
+    step_changes: list[dict] | None = None,
 ) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 0.4.0 supports run, I, MR, C, P and U charts. P and U charts
+    Version 0.5.0 supports run, I, MR, C, P and U charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause fields for points outside limits, shifts and trends.
+    Baseline periods, recalculation segments, targets, interventions and
+    step changes are represented as additive table fields.
     """
     chart_key = _chart_key(chart)
     out = _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
-    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.4.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
+    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.5.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
     out["chart"] = chart_key
+    out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes)
     if chart_key == "run":
-        rules = anhoej_rules(out[y]); out["plot_value"] = out[y]; out["centre"] = rules.median; out["centre_label"] = "Median"
+        centre_source = out[y].iloc[: int(baseline_points)] if baseline_points else out[y]
+        rules = anhoej_rules(centre_source); out["plot_value"] = out[y]; out["centre"] = rules.median; out["centre_label"] = "Median"
         out["lcl"] = np.nan; out["ucl"] = np.nan; out["moving_range"] = np.nan; out["signal"] = False; out["signal_rule"] = ""
         out["anhoej_signal_long_run"] = rules.signal_long_run; out["anhoej_signal_few_crossings"] = rules.signal_few_crossings
         return out
     if chart_key == "i":
-        values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan
-        sigma = mrbar / 1.128 if mrbar == mrbar else np.nan; centre = float(values.mean()) if len(values) else np.nan
-        lcl = centre - 3*sigma if sigma == sigma else np.nan; ucl = centre + 3*sigma if sigma == sigma else np.nan
-        out["plot_value"] = values; out["centre"] = centre; out["centre_label"] = "Mean"; out["lcl"] = lcl; out["ucl"] = ucl
-        nhs = nhs_xmr_signals(values, centre, lcl, ucl, improvement, NhsRuleConfig(shift_points, trend_points))
-        out["moving_range"] = mr; out["signal"] = nhs["special_cause"].astype(bool); out["signal_rule"] = nhs["special_cause_rule"]
-        out["mrbar"] = mrbar; out["sigma"] = sigma
+        values = out[y].astype(float); mr = values.diff().abs()
+        out["plot_value"] = values; out["centre"] = np.nan; out["centre_label"] = "Mean"; out["lcl"] = np.nan; out["ucl"] = np.nan
+        out["moving_range"] = mr; out["mrbar"] = np.nan; out["sigma"] = np.nan
+        for _, group in out.groupby("segment_id", sort=True):
+            source = _segment_source(values, group.index, baseline_points)
+            segment_mr = source.diff().abs()
+            mrbar = float(segment_mr.dropna().mean()) if len(segment_mr.dropna()) else np.nan
+            sigma = mrbar / 1.128 if mrbar == mrbar else np.nan
+            centre = float(source.mean()) if len(source) else np.nan
+            lcl = centre - 3 * sigma if sigma == sigma else np.nan
+            ucl = centre + 3 * sigma if sigma == sigma else np.nan
+            out.loc[group.index, "centre"] = centre
+            out.loc[group.index, "lcl"] = lcl
+            out.loc[group.index, "ucl"] = ucl
+            out.loc[group.index, "mrbar"] = mrbar
+            out.loc[group.index, "sigma"] = sigma
+        nhs = nhs_xmr_signals(values, out["centre"], out["lcl"], out["ucl"], improvement, NhsRuleConfig(shift_points, trend_points))
+        out["signal"] = nhs["special_cause"].astype(bool); out["signal_rule"] = nhs["special_cause_rule"]
         return pd.concat([out, nhs], axis=1)
     if chart_key == "mr":
         values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan

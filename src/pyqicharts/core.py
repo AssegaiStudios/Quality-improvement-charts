@@ -52,12 +52,18 @@ def qic(
     improvement: str | None = None,
     shift_points: int = 8,
     trend_points: int = 6,
+    baseline_points: int | None = None,
+    recalculation_points: list | None = None,
+    target: float | int | None = None,
+    interventions: list[dict] | None = None,
+    step_changes: list[dict] | None = None,
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 0.4.0 supports run, I, MR, C, P and U charts. P and U charts
+    Version 0.5.0 supports run, I, MR, C, P and U charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
-    special cause colouring and interpretation.
+    special cause colouring and interpretation, plus baseline, recalculation,
+    target, intervention and step-change metadata.
     """
     chart_key = _normalise_chart_name(chart); style = get_theme(theme)
     table = qic_table(
@@ -69,6 +75,11 @@ def qic(
         improvement=improvement,
         shift_points=shift_points,
         trend_points=trend_points,
+        baseline_points=baseline_points,
+        recalculation_points=recalculation_points,
+        target=target,
+        interventions=interventions,
+        step_changes=step_changes,
     )
     fig, ax = plt.subplots(figsize=figsize)
     ylabel = y
@@ -88,9 +99,25 @@ def qic(
         else:
             ax.scatter(signal_rows[x], signal_rows["plot_value"], s=90, color=style.signal, marker="o", zorder=5, label="Signal")
     centre = _scalar_or_none(table["centre"]); lcl = _scalar_or_none(table["lcl"]); ucl = _scalar_or_none(table["ucl"]); centre_label = str(table["centre_label"].iloc[0]) if len(table) else "Centre"
-    if centre is not None and not np.isnan(centre): ax.axhline(centre, linestyle="--", linewidth=1.4, color=style.centre, label=centre_label)
-    if lcl is not None and not np.isnan(lcl): ax.axhline(lcl, linestyle=":", linewidth=1.2, color=style.limits, label="LCL")
-    if ucl is not None and not np.isnan(ucl): ax.axhline(ucl, linestyle=":", linewidth=1.2, color=style.limits, label="UCL")
+    for segment_id, rows in table.groupby("segment_id" if "segment_id" in table else table.index, sort=True):
+        first_x = rows[x].iloc[0]; last_x = rows[x].iloc[-1]
+        seg_centre = _scalar_or_none(rows["centre"]); seg_lcl = _scalar_or_none(rows["lcl"]); seg_ucl = _scalar_or_none(rows["ucl"])
+        label_suffix = "" if segment_id == 1 else f" S{segment_id}"
+        if seg_centre is not None and not np.isnan(seg_centre): ax.hlines(seg_centre, first_x, last_x, linestyle="--", linewidth=1.4, color=style.centre, label=centre_label + label_suffix)
+        if seg_lcl is not None and not np.isnan(seg_lcl): ax.hlines(seg_lcl, first_x, last_x, linestyle=":", linewidth=1.2, color=style.limits, label="LCL" + label_suffix)
+        if seg_ucl is not None and not np.isnan(seg_ucl): ax.hlines(seg_ucl, first_x, last_x, linestyle=":", linewidth=1.2, color=style.limits, label="UCL" + label_suffix)
+    if target is not None:
+        ax.axhline(target, linestyle="-.", linewidth=1.2, color="#330072", label="Target")
+    if "intervention" in table:
+        for _, row in table[table["intervention"]].iterrows():
+            ax.axvline(row[x], linestyle="-", linewidth=1.0, color="#425563", alpha=0.65)
+            if row["intervention_label"]:
+                ax.text(row[x], row["plot_value"], str(row["intervention_label"]), rotation=90, va="bottom", ha="right", fontsize=8)
+    if "step_change" in table:
+        for _, row in table[table["step_change"]].iterrows():
+            ax.axvline(row[x], linestyle="--", linewidth=1.0, color="#007F3B", alpha=0.75)
+            if row["step_change_label"]:
+                ax.text(row[x], row["plot_value"], str(row["step_change_label"]), rotation=90, va="bottom", ha="left", fontsize=8)
     ax.set_xlabel(x); ax.set_ylabel(ylabel); ax.set_title(title or f"{chart_key.upper()} chart of {y}"); ax.grid(True, alpha=style.grid_alpha); ax.legend(loc="best"); fig.tight_layout()
     anhoej = anhoej_rules(table[y]) if chart_key == "run" else None
     return QicResult(data.copy(), chart_key, x, y, centre if centre is not None else float("nan"), centre_label, lcl, ucl, anhoej, table["signal"], table, fig, ax)

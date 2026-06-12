@@ -11,4 +11,4 @@ __all__ = [
     "anhoej_rules", "get_theme", "list_themes", "pareto_table",
     "paretochart", "qic", "qic_table", "nhs_xmr_signals",
 ]
-__version__ = "0.4.0"
+__version__ = "0.5.0"
