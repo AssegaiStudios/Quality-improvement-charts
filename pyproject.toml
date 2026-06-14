@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqicharts"
-version = "0.5.0"
+version = "0.6.0"
 description = "Quality Improvement and Statistical Process Control charts for Python"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -22,7 +22,8 @@ classifiers = [
 dependencies = ["numpy>=1.22", "pandas>=1.5", "matplotlib>=3.5"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "build>=1.0"]
+reporting = ["openpyxl>=3.1", "python-pptx>=0.6.23"]
+dev = ["pytest>=7", "build>=1.0", "openpyxl>=3.1", "python-pptx>=0.6.23"]
 
 [project.urls]
 Homepage = "https://github.com/AssegaiStudios/Quality-improvement-charts"

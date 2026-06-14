@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.0 - 2026-06-09
+
+### Added
+
+- PNG export via `chart.save_png(...)` and `export_png(...)`.
+- Excel export via `export_excel(...)`.
+- PowerPoint export via `export_powerpoint(...)`.
+- Report bundles via `create_report_bundle(...)`.
+- Power BI-friendly tables via `powerbi_table(...)`, `spc_summary_table(...)` and `special_cause_summary_table(...)`.
+- Optional `reporting` dependencies for `openpyxl` and `python-pptx`.
+- Graceful optional dependency errors when reporting extras are missing.
+- Focused tests for PNG, Excel, PowerPoint, bundles, Power BI tables and optional dependency handling.
+
+### Changed
+
+- Bumped package version to 0.6.0.
+- Updated README to document reporting and Power BI helpers.
+
+### Notes
+
+- This is an incremental pre-1.0 release. Specialist rare-event charts, risk-adjusted charts and full validation datasets remain planned for later releases.
+
 ## 0.5.0 - 2026-06-09
 
 ### Added

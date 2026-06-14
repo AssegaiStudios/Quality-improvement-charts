@@ -25,6 +25,9 @@ class QicResult:
     table: pd.DataFrame
     figure: object
     axes: object
+    def save_png(self, path: str, dpi: int = 150):
+        from .export import export_png
+        return export_png(self, path, dpi=dpi)
     def summary(self) -> dict:
         out = {"chart": self.chart, "centre_label": self.centre_label, "centre": self.centre, "lcl": self.lcl, "ucl": self.ucl, "signals": int(self.signals.sum())}
         if self.anhoej is not None: out["anhoej"] = self.anhoej
@@ -60,7 +63,7 @@ def qic(
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 0.5.0 supports run, I, MR, C, P and U charts. P and U charts
+    Version 0.6.0 supports run, I, MR, C, P and U charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause colouring and interpretation, plus baseline, recalculation,
     target, intervention and step-change metadata.

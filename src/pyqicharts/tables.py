@@ -106,7 +106,7 @@ def qic_table(
 ) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 0.5.0 supports run, I, MR, C, P and U charts. P and U charts
+    Version 0.6.0 supports run, I, MR, C, P and U charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause fields for points outside limits, shifts and trends.
     Baseline periods, recalculation segments, targets, interventions and
@@ -115,7 +115,7 @@ def qic_table(
     chart_key = _chart_key(chart)
     out = _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
-    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.5.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
+    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.6.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
     out["chart"] = chart_key
     out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes)
     if chart_key == "run":
