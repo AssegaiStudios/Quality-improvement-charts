@@ -37,7 +37,7 @@ class QicResult:
 
 def _normalise_chart_name(chart: str) -> str:
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u"}.get(key, key)
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t"}.get(key, key)
 
 def _scalar_or_none(series: pd.Series) -> float | None:
     non_null = series.dropna()
@@ -63,7 +63,7 @@ def qic(
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 0.6.0 supports run, I, MR, C, P and U charts. P and U charts
+    Version 0.7.0 supports run, I, MR, C, P, U, G and T charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause colouring and interpretation, plus baseline, recalculation,
     target, intervention and step-change metadata.
@@ -89,6 +89,8 @@ def qic(
     if chart_key == "mr": ylabel = f"Moving range of {y}"
     elif chart_key == "p": ylabel = f"Proportion of {y}"
     elif chart_key == "u": ylabel = f"Rate of {y}"
+    elif chart_key == "g": ylabel = f"Cases between events: {y}"
+    elif chart_key == "t": ylabel = f"Time between events: {y}"
     ax.plot(table[x], table["plot_value"], marker="o", linewidth=1.8, color=style.line, markerfacecolor=style.marker, markeredgecolor=style.marker)
     signal_rows = table[table["signal"]]
     if not signal_rows.empty:

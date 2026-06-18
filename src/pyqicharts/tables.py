@@ -87,7 +87,57 @@ def _ordered_numeric_with_denominator(data: pd.DataFrame, x: str, y: str, denomi
 
 def _chart_key(chart: str) -> str:
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u"}.get(key, key)
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t"}.get(key, key)
+
+
+def _validate_non_negative(values: pd.Series, chart_key: str) -> None:
+    if (values < 0).any():
+        label = "G" if chart_key == "g" else "T"
+        raise ValueError(f"{label} chart intervals must be non-negative.")
+
+
+def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFrame:
+    values = out[y].astype(float)
+    _validate_non_negative(values, chart_key)
+    centre = float(values.mean()) if len(values) else np.nan
+    out["plot_value"] = values
+    out["centre"] = centre
+    out["moving_range"] = np.nan
+    out["rare_event_mean"] = centre
+
+    if chart_key == "g":
+        p = 1 / (centre + 1) if centre == centre and centre >= 0 else np.nan
+        if p == p and 0 < p < 1:
+            lcl = max(0.0, np.log(0.99865) / np.log(1 - p) - 1)
+            ucl = max(0.0, np.log(0.00135) / np.log(1 - p) - 1)
+        else:
+            lcl = np.nan
+            ucl = np.nan
+        out["centre_label"] = "Mean cases between events"
+        out["rare_event_probability"] = p
+    else:
+        if centre == centre and centre > 0:
+            lcl = -centre * np.log(0.99865)
+            ucl = -centre * np.log(0.00135)
+        else:
+            lcl = np.nan
+            ucl = np.nan
+        out["centre_label"] = "Mean time between events"
+        out["rare_event_probability"] = np.nan
+
+    out["lcl"] = lcl
+    out["ucl"] = ucl
+    out["outside_lcl"] = (values < lcl).fillna(False) if lcl == lcl else False
+    out["outside_ucl"] = (values > ucl).fillna(False) if ucl == ucl else False
+    out["signal"] = (out["outside_lcl"] | out["outside_ucl"]).astype(bool)
+    out["signal_rule"] = np.where(out["outside_lcl"], "Unusually short interval", np.where(out["outside_ucl"], "Unusually long interval", ""))
+    out["special_cause"] = out["signal"]
+    out["special_cause_rule"] = out["signal_rule"]
+    out["special_cause_direction"] = np.where(out["outside_lcl"], "low", np.where(out["outside_ucl"], "high", ""))
+    out["special_cause_type"] = np.where(out["signal"], "neutral", "")
+    out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
+    out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    return out
 
 def qic_table(
     data: pd.DataFrame,
@@ -106,7 +156,7 @@ def qic_table(
 ) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 0.6.0 supports run, I, MR, C, P and U charts. P and U charts
+    Version 0.7.0 supports run, I, MR, C, P, U, G and T charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause fields for points outside limits, shifts and trends.
     Baseline periods, recalculation segments, targets, interventions and
@@ -115,7 +165,7 @@ def qic_table(
     chart_key = _chart_key(chart)
     out = _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
-    if chart_key not in {"run","i","mr","c","p","u"}: raise ValueError("v0.6.0 supports chart='run', 'i', 'mr', 'c', 'p', and 'u'.")
+    if chart_key not in {"run","i","mr","c","p","u","g","t"}: raise ValueError("v0.7.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'g', and 't'.")
     out["chart"] = chart_key
     out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes)
     if chart_key == "run":
@@ -144,6 +194,8 @@ def qic_table(
         nhs = nhs_xmr_signals(values, out["centre"], out["lcl"], out["ucl"], improvement, NhsRuleConfig(shift_points, trend_points))
         out["signal"] = nhs["special_cause"].astype(bool); out["signal_rule"] = nhs["special_cause_rule"]
         return pd.concat([out, nhs], axis=1)
+    if chart_key in {"g", "t"}:
+        return _rare_event_fields(out, y, chart_key)
     if chart_key == "mr":
         values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan
         ucl = 3.267 * mrbar if mrbar == mrbar else np.nan; signal = (mr > ucl) if mrbar == mrbar else pd.Series(False, index=out.index)

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.7.0 - 2026-06-09
+
+### Added
+
+- G chart support for rare-event cases-between-events monitoring.
+- T chart support for time-between-event monitoring.
+- Rare-event centre line, control limits and signal detection.
+- Non-negative interval validation with clear errors.
+- Synthetic healthcare example datasets for infections between events, days between serious incidents and days between falls with harm.
+- G and T chart examples.
+- Focused tests for G/T calculations, rendering, invalid intervals and rare-event signals.
+
+### Changed
+
+- Bumped package version to 0.7.0.
+- Updated README to document rare-event chart support and v0.8 roadmap focus.
+
+### Notes
+
+- This is an incremental pre-1.0 release. Risk-adjusted P-prime and U-prime charts remain planned for v0.8.
+
 ## 0.6.0 - 2026-06-09
 
 ### Added
