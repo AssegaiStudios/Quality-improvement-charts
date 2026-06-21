@@ -37,7 +37,7 @@ class QicResult:
 
 def _normalise_chart_name(chart: str) -> str:
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t"}.get(key, key)
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t", "p'":"p_prime", "pprime":"p_prime", "u'":"u_prime", "uprime":"u_prime"}.get(key, key)
 
 def _scalar_or_none(series: pd.Series) -> float | None:
     non_null = series.dropna()
@@ -49,6 +49,7 @@ def qic(
     y: str,
     chart: str = "run",
     denominator: str | None = None,
+    expected: str | None = None,
     title: str | None = None,
     figsize: tuple[int,int] = (10,5),
     theme: str = "default",
@@ -63,7 +64,7 @@ def qic(
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 0.7.0 supports run, I, MR, C, P, U, G and T charts. P and U charts
+    Version 0.8.0 supports run, I, MR, C, P, U, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause colouring and interpretation, plus baseline, recalculation,
     target, intervention and step-change metadata.
@@ -75,6 +76,7 @@ def qic(
         y=y,
         chart=chart_key,
         denominator=denominator,
+        expected=expected,
         improvement=improvement,
         shift_points=shift_points,
         trend_points=trend_points,
@@ -91,6 +93,7 @@ def qic(
     elif chart_key == "u": ylabel = f"Rate of {y}"
     elif chart_key == "g": ylabel = f"Cases between events: {y}"
     elif chart_key == "t": ylabel = f"Time between events: {y}"
+    elif chart_key in {"p_prime", "u_prime"}: ylabel = f"Observed / expected: {y}"
     ax.plot(table[x], table["plot_value"], marker="o", linewidth=1.8, color=style.line, markerfacecolor=style.marker, markeredgecolor=style.marker)
     signal_rows = table[table["signal"]]
     if not signal_rows.empty:

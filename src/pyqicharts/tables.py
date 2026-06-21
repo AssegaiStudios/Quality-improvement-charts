@@ -85,9 +85,18 @@ def _ordered_numeric_with_denominator(data: pd.DataFrame, x: str, y: str, denomi
     df = df.dropna(subset=[y, denominator]); df = df[df[denominator] > 0]
     return df.reset_index(drop=True)
 
+
+def _ordered_numeric_with_expected(data: pd.DataFrame, x: str, y: str, expected: str) -> pd.DataFrame:
+    if expected not in data.columns: raise KeyError(f"expected column not found: {expected!r}")
+    if x not in data.columns: raise KeyError(f"x column not found: {x!r}")
+    if y not in data.columns: raise KeyError(f"y column not found: {y!r}")
+    df = data[[x, y, expected]].copy()
+    df[y] = pd.to_numeric(df[y], errors="coerce"); df[expected] = pd.to_numeric(df[expected], errors="coerce")
+    return df.dropna(subset=[y, expected]).reset_index(drop=True)
+
 def _chart_key(chart: str) -> str:
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t"}.get(key, key)
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t", "p'":"p_prime", "pprime":"p_prime", "u'":"u_prime", "uprime":"u_prime"}.get(key, key)
 
 
 def _validate_non_negative(values: pd.Series, chart_key: str) -> None:
@@ -139,12 +148,51 @@ def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFram
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
     return out
 
+
+def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: str) -> pd.DataFrame:
+    observed = out[y].astype(float)
+    expected_values = out[expected].astype(float)
+    if (expected_values < 0).any():
+        raise ValueError("expected values must be non-negative.")
+    safe_expected = expected_values.replace(0, np.nan)
+    oe_ratio = observed / safe_expected
+    centre = 1.0
+    se = 1 / np.sqrt(safe_expected)
+    lcl = np.maximum(0, centre - 3 * se)
+    ucl = centre + 3 * se
+
+    out["observed"] = observed
+    out["expected"] = expected_values
+    out["oe_ratio"] = oe_ratio
+    out["risk_adjusted_value"] = oe_ratio
+    out["plot_value"] = oe_ratio
+    out["centre"] = centre
+    out["centre_label"] = "Expected performance"
+    out["lcl"] = lcl
+    out["ucl"] = ucl
+    out["moving_range"] = np.nan
+    out["expected_zero"] = expected_values == 0
+    out["adjusted_rate"] = oe_ratio
+    out["risk_adjusted_chart"] = chart_key
+    out["outside_lcl"] = (oe_ratio < lcl).fillna(False)
+    out["outside_ucl"] = (oe_ratio > ucl).fillna(False)
+    out["signal"] = (out["outside_lcl"] | out["outside_ucl"]).astype(bool)
+    out["signal_rule"] = np.where(out["outside_lcl"], "Observed below expected limits", np.where(out["outside_ucl"], "Observed above expected limits", ""))
+    out["special_cause"] = out["signal"]
+    out["special_cause_rule"] = out["signal_rule"]
+    out["special_cause_direction"] = np.where(out["outside_lcl"], "low", np.where(out["outside_ucl"], "high", ""))
+    out["special_cause_type"] = np.where(out["signal"], "neutral", "")
+    out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
+    out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    return out
+
 def qic_table(
     data: pd.DataFrame,
     x: str,
     y: str,
     chart: str = "run",
     denominator: str | None = None,
+    expected: str | None = None,
     improvement: str | None = None,
     shift_points: int = 8,
     trend_points: int = 6,
@@ -156,16 +204,17 @@ def qic_table(
 ) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 0.7.0 supports run, I, MR, C, P, U, G and T charts. P and U charts
+    Version 0.8.0 supports run, I, MR, C, P, U, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause fields for points outside limits, shifts and trends.
     Baseline periods, recalculation segments, targets, interventions and
     step changes are represented as additive table fields.
     """
     chart_key = _chart_key(chart)
-    out = _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
+    out = _ordered_numeric_with_expected(data, x, y, expected) if chart_key in {"p_prime","u_prime"} and expected else _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
-    if chart_key not in {"run","i","mr","c","p","u","g","t"}: raise ValueError("v0.7.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'g', and 't'.")
+    if chart_key in {"p_prime","u_prime"} and expected is None: raise ValueError(f"chart={chart!r} requires an expected column.")
+    if chart_key not in {"run","i","mr","c","p","u","g","t","p_prime","u_prime"}: raise ValueError("v0.8.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'g', 't', 'p_prime', and 'u_prime'.")
     out["chart"] = chart_key
     out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes)
     if chart_key == "run":
@@ -196,6 +245,8 @@ def qic_table(
         return pd.concat([out, nhs], axis=1)
     if chart_key in {"g", "t"}:
         return _rare_event_fields(out, y, chart_key)
+    if chart_key in {"p_prime", "u_prime"}:
+        return _risk_adjusted_fields(out, y, expected, chart_key)
     if chart_key == "mr":
         values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan
         ucl = 3.267 * mrbar if mrbar == mrbar else np.nan; signal = (mr > ucl) if mrbar == mrbar else pd.Series(False, index=out.index)

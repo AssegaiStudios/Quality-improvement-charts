@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.0 - 2026-06-09
+
+### Added
+
+- P-prime chart support with `chart="p_prime"`.
+- U-prime chart support with `chart="u_prime"`.
+- Observed/expected ratio calculations.
+- Approximate risk-adjusted limits using expected volume.
+- Safe handling for zero expected values.
+- Clear validation for missing or negative expected values.
+- Synthetic observed/expected example datasets.
+- P-prime and U-prime examples.
+- Focused tests for risk-adjusted calculations, zero expected values, rendering and validation.
+
+### Changed
+
+- Bumped package version to 0.8.0.
+- Updated README to document risk-adjusted chart support and v0.9 roadmap focus.
+
+### Notes
+
+- This is an incremental pre-1.0 release. Full validation datasets, documentation and packaging hardening remain planned for v0.9.
+
 ## 0.7.0 - 2026-06-09
 
 ### Added

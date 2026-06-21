@@ -6,7 +6,7 @@ pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI ch
 
 ## Current Status
 
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 pyqicharts is currently in active development. The project already provides:
 
@@ -16,20 +16,19 @@ pyqicharts is currently in active development. The project already provides:
 - C charts
 - P charts
 - U charts
-- G charts for rare-event monitoring
-- T charts for time-between-event monitoring
+- G charts
+- T charts
+- P-prime risk-adjusted charts
+- U-prime risk-adjusted charts
 - Pareto charts
 - Anhoej-style run chart diagnostics
 - NHS-style XmR special cause detection
-- Direction-of-improvement interpretation
-- Baseline periods and recalculation segments
-- Targets, interventions and step-change metadata
+- Baselines, recalculation segments, targets, interventions and step changes
 - PNG, Excel and PowerPoint export
 - Report bundles
 - Power BI-friendly tables
-- Built-in chart themes
 
-Future releases will focus on risk-adjusted SPC, validation, and production documentation.
+Future releases will focus on validation, documentation, packaging hardening and public release readiness.
 
 ## Installation
 
@@ -65,44 +64,65 @@ chart = qic(data=df, x="month", y="value", chart="i")
 chart.figure
 ```
 
-## Rare-Event Charts
+## Risk-Adjusted Charts
 
-Version 0.7.0 adds G and T charts for healthcare rare-event workflows.
+Version 0.8.0 adds observed-versus-expected SPC charts.
+
+```python
+from pyqicharts import qic, risk_adjusted_readmissions
+
+df = risk_adjusted_readmissions()
+chart = qic(
+    data=df,
+    x="month",
+    y="observed",
+    expected="expected",
+    chart="p_prime",
+)
+```
+
+```python
+from pyqicharts import qic, risk_adjusted_infection_rates
+
+df = risk_adjusted_infection_rates()
+chart = qic(
+    data=df,
+    x="month",
+    y="observed",
+    expected="expected",
+    chart="u_prime",
+)
+```
+
+Risk-adjusted tables include:
+
+- `observed`
+- `expected`
+- `oe_ratio`
+- `risk_adjusted_value`
+- `adjusted_rate`
+- `expected_zero`
+- `outside_lcl`
+- `outside_ucl`
+- `signal`
+
+Rows with zero expected values are retained and marked with `expected_zero=True`; adjusted values and limits are set to missing for those rows.
+
+## Rare-Event Charts
 
 ```python
 from pyqicharts import infections_between_events, qic
 
 df = infections_between_events()
-chart = qic(
-    data=df,
-    x="case_number",
-    y="cases_between_events",
-    chart="g",
-)
+chart = qic(data=df, x="case_number", y="cases_between_events", chart="g")
 ```
 
 ```python
 from pyqicharts import days_between_serious_incidents, qic
 
 df = days_between_serious_incidents()
-chart = qic(
-    data=df,
-    x="event_number",
-    y="days_between_events",
-    chart="t",
-)
+chart = qic(data=df, x="event_number", y="days_between_events", chart="t")
 ```
-
-Rare-event intervals must be non-negative. G and T chart tables include:
-
-- `rare_event_mean`
-- `rare_event_probability`
-- `outside_lcl`
-- `outside_ucl`
-- `signal`
-- `signal_rule`
-- `special_cause`
-- `special_cause_rule`
 
 ## Reporting
 
@@ -118,16 +138,6 @@ create_report_bundle(charts=[chart], output_dir="report")
 
 Excel and PowerPoint helpers require `pyqicharts[reporting]`.
 
-## Power BI Tables
-
-```python
-from pyqicharts import powerbi_table, special_cause_summary_table, spc_summary_table
-
-rows = powerbi_table(chart)
-summary = spc_summary_table(chart)
-signals = special_cause_summary_table(chart)
-```
-
 ## Supported Charts
 
 | Chart Type | Status |
@@ -140,19 +150,13 @@ signals = special_cause_summary_table(chart)
 | U chart | Supported |
 | G chart | Supported |
 | T chart | Supported |
+| P-prime chart | Supported |
+| U-prime chart | Supported |
 | Pareto chart | Supported |
 | Xbar chart | Planned |
 | S chart | Planned |
-| Risk-adjusted P-prime chart | Planned |
-| Risk-adjusted U-prime chart | Planned |
 
 ## Roadmap
-
-### v0.8.0 - Risk-Adjusted SPC
-
-- P-prime charts
-- U-prime charts
-- Observed versus expected calculations
 
 ### v0.9.0 - Documentation, Validation and Release Hardening
 

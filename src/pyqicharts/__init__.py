@@ -1,6 +1,6 @@
 """pyqicharts: Quality Improvement and SPC charts for Python."""
 from .core import QicResult, qic
-from .datasets import days_between_falls_with_harm, days_between_serious_incidents, infections_between_events
+from .datasets import days_between_falls_with_harm, days_between_serious_incidents, infections_between_events, risk_adjusted_infection_rates, risk_adjusted_readmissions
 from .export import create_report_bundle, export_excel, export_png, export_powerpoint
 from .nhs_rules import NhsRuleConfig, nhs_xmr_signals
 from .pareto import ParetoResult, paretochart
@@ -15,6 +15,7 @@ __all__ = [
     "days_between_serious_incidents", "export_excel", "export_png",
     "export_powerpoint", "get_theme", "list_themes", "pareto_table",
     "paretochart", "powerbi_table", "qic", "qic_table", "infections_between_events", "nhs_xmr_signals",
+    "risk_adjusted_infection_rates", "risk_adjusted_readmissions",
     "special_cause_summary_table", "spc_summary_table",
 ]
-__version__ = "0.7.0"
+__version__ = "0.8.0"
