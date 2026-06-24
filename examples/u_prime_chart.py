@@ -13,4 +13,4 @@ chart = qic(
     title="Risk-adjusted infection rates",
 )
 
-plt.show()
+plt.close(chart.figure)

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.9.0 - 2026-06-09
+
+### Added
+
+- Documentation scaffold for installation, quickstart, chart families, reporting, Power BI, API reference and validation.
+- Validation datasets and expected outputs for representative chart calculations.
+- Validation helper `read_validation_csv(...)`.
+- Example scripts for the roadmap example set.
+- GitHub Actions test workflow.
+- Release hardening tests for examples, validation outputs and required files.
+
+### Changed
+
+- Bumped package version to 0.9.0.
+- Updated README to describe v0.9 validation and release-hardening scope.
+
+### Notes
+
+- This is still a pre-1.0 release. v1.0 should expand validation datasets and finalize public API documentation and compatibility policy.
+
 ## 0.8.0 - 2026-06-09
 
 ### Added

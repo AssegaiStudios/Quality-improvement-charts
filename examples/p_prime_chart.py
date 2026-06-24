@@ -13,4 +13,4 @@ chart = qic(
     title="Risk-adjusted readmissions",
 )
 
-plt.show()
+plt.close(chart.figure)

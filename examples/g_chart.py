@@ -12,4 +12,4 @@ chart = qic(
     title="Infections between events",
 )
 
-plt.show()
+plt.close(chart.figure)

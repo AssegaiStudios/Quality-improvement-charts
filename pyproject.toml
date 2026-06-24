@@ -4,18 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqicharts"
-version = "0.8.0"
+version = "0.9.0"
 description = "Quality Improvement and Statistical Process Control charts for Python"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "Assegai Studios Ltd"}]
 keywords = ["quality improvement", "statistical process control", "spc", "run charts", "control charts", "healthcare analytics", "power bi", "excel"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Healthcare Industry",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Topic :: Scientific/Engineering :: Information Analysis",
 ]

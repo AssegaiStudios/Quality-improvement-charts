@@ -12,4 +12,4 @@ chart = qic(
     title="Days between serious incidents",
 )
 
-plt.show()
+plt.close(chart.figure)

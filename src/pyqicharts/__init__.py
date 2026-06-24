@@ -8,6 +8,7 @@ from .powerbi import powerbi_table, special_cause_summary_table, spc_summary_tab
 from .rules import AnhoejResult, anhoej_rules
 from .tables import qic_table, pareto_table
 from .themes import Theme, get_theme, list_themes
+from .validation import read_validation_csv
 
 __all__ = [
     "AnhoejResult", "NhsRuleConfig", "ParetoResult", "QicResult", "Theme",
@@ -16,6 +17,6 @@ __all__ = [
     "export_powerpoint", "get_theme", "list_themes", "pareto_table",
     "paretochart", "powerbi_table", "qic", "qic_table", "infections_between_events", "nhs_xmr_signals",
     "risk_adjusted_infection_rates", "risk_adjusted_readmissions",
-    "special_cause_summary_table", "spc_summary_table",
+    "read_validation_csv", "special_cause_summary_table", "spc_summary_table",
 ]
-__version__ = "0.8.0"
+__version__ = "0.9.0"
