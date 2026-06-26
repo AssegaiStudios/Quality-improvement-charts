@@ -1,6 +1,8 @@
-"""Xbar chart example placeholder.
+import matplotlib.pyplot as plt
 
-Xbar charts are planned for a later release and are not implemented in v0.9.
-"""
+from pyqicharts import qic, sample_subgroup_measurements
 
-print("Xbar charts are planned for a later release.")
+
+df = sample_subgroup_measurements()
+chart = qic(df, x="subgroup", y="value", chart="xbar")
+plt.close(chart.figure)

@@ -1,11 +1,16 @@
-"""Power BI-friendly table helpers."""
+"""Power BI-friendly table helpers.
+
+These helpers do not depend on Power BI APIs. They simply reshape chart result
+objects into pandas DataFrames that can be returned from Power BI Python
+visuals or exported to CSV.
+"""
 from __future__ import annotations
 
 import pandas as pd
 
 
 def powerbi_table(chart) -> pd.DataFrame:
-    """Return chart rows as a Power BI-friendly DataFrame."""
+    """Return all calculated chart rows plus chart metadata columns."""
 
     out = chart.table.copy()
     out["chart_type"] = chart.chart
@@ -53,6 +58,8 @@ def special_cause_summary_table(chart) -> pd.DataFrame:
                 "special_cause_direction",
             ]
         )
+    # Keep only columns that exist for the chart type. This allows one helper
+    # to serve XmR, rare-event, risk-adjusted and attribute charts.
     columns = [
         col
         for col in [

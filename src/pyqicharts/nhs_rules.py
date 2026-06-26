@@ -1,4 +1,9 @@
-"""NHS-style special cause rules for SPC charts."""
+"""NHS-style special cause rules for SPC charts.
+
+This module is deliberately independent from matplotlib. It receives calculated
+values and limits, then returns table columns that can be used by plots,
+exports, dashboards or tests.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,6 +24,7 @@ class NhsRuleConfig:
 
 
 def _normalise_improvement(improvement: str | None) -> ImprovementDirection | None:
+    """Accept common spellings while storing one canonical direction string."""
     if improvement is None:
         return None
     key = improvement.strip().lower().replace("_", " ").replace("-", " ")
@@ -30,6 +36,7 @@ def _normalise_improvement(improvement: str | None) -> ImprovementDirection | No
 
 
 def _classify_direction(direction: str, improvement: ImprovementDirection | None) -> str:
+    """Translate signal direction into improvement/concern/neutral semantics."""
     if improvement is None or direction == "":
         return "neutral"
     high_is_improvement = improvement == "high is good"
@@ -41,6 +48,7 @@ def _classify_direction(direction: str, improvement: ImprovementDirection | None
 
 
 def _signal_colour(signal_type: str) -> str:
+    """Return Making Data Count-style colours for interpreted signals."""
     return {
         "improvement": "#005EB8",
         "concern": "#ED8B00",
@@ -49,6 +57,7 @@ def _signal_colour(signal_type: str) -> str:
 
 
 def _mark_shift(values: pd.Series, centre: pd.Series | float, length: int) -> tuple[pd.Series, pd.Series]:
+    """Mark sustained points above or below the centre line."""
     centre_series = centre if isinstance(centre, pd.Series) else pd.Series(centre, index=values.index)
     signs = pd.Series(np.sign(values - centre_series), index=values.index).fillna(0).astype(int)
     signal = pd.Series(False, index=values.index)
@@ -57,6 +66,8 @@ def _mark_shift(values: pd.Series, centre: pd.Series | float, length: int) -> tu
     run_sign = 0
 
     for idx, sign in signs.items():
+        # Points exactly on the centre line do not count towards a shift and
+        # do not break an active run, matching NHS guidance wording.
         if sign == 0:
             continue
         if sign != run_sign:
@@ -75,6 +86,7 @@ def _mark_shift(values: pd.Series, centre: pd.Series | float, length: int) -> tu
 
 
 def _mark_trend(values: pd.Series, length: int) -> tuple[pd.Series, pd.Series]:
+    """Mark sustained increasing or decreasing point sequences."""
     signal = pd.Series(False, index=values.index)
     direction = pd.Series("", index=values.index, dtype=object)
     run_indices: list[int] = []
@@ -92,6 +104,8 @@ def _mark_trend(values: pd.Series, length: int) -> tuple[pd.Series, pd.Series]:
         previous = value
         start_idx = previous_idx
         previous_idx = idx
+        # Ties do not add to or cancel a trend, so equal consecutive values
+        # are ignored rather than resetting the active direction.
         if sign == 0:
             continue
         if sign != run_sign:
@@ -144,6 +158,8 @@ def nhs_xmr_signals(
     out["shift"] = shift_signal
     out["trend"] = trend_signal
 
+    # Build human-readable row labels after all rule booleans are known. This
+    # keeps downstream tables easy to filter while retaining compact text.
     rules: list[str] = []
     directions: list[str] = []
     labels: list[str] = []

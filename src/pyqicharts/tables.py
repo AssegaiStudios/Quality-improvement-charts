@@ -1,5 +1,11 @@
-"""Excel, Power BI and dashboard-friendly tabular outputs."""
+"""Table-first SPC calculations used by charting, exports and dashboards.
+
+The public plotting API delegates here first. Keeping calculations in this
+module means every downstream surface (matplotlib, Excel, Power BI and tests)
+uses the same values and column names.
+"""
 from __future__ import annotations
+import math
 import numpy as np
 import pandas as pd
 from .nhs_rules import NhsRuleConfig, nhs_xmr_signals
@@ -7,6 +13,7 @@ from .rules import anhoej_rules
 
 
 def _point_to_position(point, x_values: pd.Series, n: int) -> int | None:
+    """Resolve a marker point from either x-axis value or 1-based row number."""
     matches = x_values[x_values == point]
     if len(matches):
         return int(matches.index[0])
@@ -16,6 +23,7 @@ def _point_to_position(point, x_values: pd.Series, n: int) -> int | None:
 
 
 def _segment_ids(out: pd.DataFrame, x: str, recalculation_points: list | None) -> pd.Series:
+    """Create stable segment IDs for process recalculation periods."""
     n = len(out)
     starts = [0]
     for point in recalculation_points or []:
@@ -31,6 +39,7 @@ def _segment_ids(out: pd.DataFrame, x: str, recalculation_points: list | None) -
 
 
 def _marker_labels(out: pd.DataFrame, x: str, markers: list[dict] | None) -> pd.Series:
+    """Return marker labels aligned to the calculated table rows."""
     labels = pd.Series("", index=out.index, dtype=object)
     n = len(out)
     for marker in markers or []:
@@ -51,6 +60,7 @@ def _add_process_metadata(
     interventions: list[dict] | None,
     step_changes: list[dict] | None,
 ) -> pd.DataFrame:
+    """Add process-context columns used across all chart tables."""
     out["point_index"] = np.arange(1, len(out) + 1)
     out["baseline_period"] = out["point_index"] <= int(baseline_points) if baseline_points else False
     out["baseline_label"] = np.where(out["baseline_period"], "Baseline", "")
@@ -65,18 +75,21 @@ def _add_process_metadata(
 
 
 def _segment_source(values: pd.Series, segment_index: pd.Index, baseline_points: int | None) -> pd.Series:
+    """Choose the rows used to calculate a segment's centre and limits."""
     segment_values = values.loc[segment_index]
     if baseline_points and int(segment_index[0]) == 0:
         return segment_values.iloc[: int(baseline_points)]
     return segment_values
 
 def _ordered_numeric(data: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
+    """Return x/y rows with y coerced to numeric and missing y removed."""
     if x not in data.columns: raise KeyError(f"x column not found: {x!r}")
     if y not in data.columns: raise KeyError(f"y column not found: {y!r}")
     df = data[[x, y]].copy(); df[y] = pd.to_numeric(df[y], errors="coerce")
     return df.dropna(subset=[y]).reset_index(drop=True)
 
 def _ordered_numeric_with_denominator(data: pd.DataFrame, x: str, y: str, denominator: str) -> pd.DataFrame:
+    """Return x/y/denominator rows for P and U charts."""
     if denominator not in data.columns: raise KeyError(f"denominator column not found: {denominator!r}")
     if x not in data.columns: raise KeyError(f"x column not found: {x!r}")
     if y not in data.columns: raise KeyError(f"y column not found: {y!r}")
@@ -87,6 +100,7 @@ def _ordered_numeric_with_denominator(data: pd.DataFrame, x: str, y: str, denomi
 
 
 def _ordered_numeric_with_expected(data: pd.DataFrame, x: str, y: str, expected: str) -> pd.DataFrame:
+    """Return x/y/expected rows for risk-adjusted charts."""
     if expected not in data.columns: raise KeyError(f"expected column not found: {expected!r}")
     if x not in data.columns: raise KeyError(f"x column not found: {x!r}")
     if y not in data.columns: raise KeyError(f"y column not found: {y!r}")
@@ -95,17 +109,20 @@ def _ordered_numeric_with_expected(data: pd.DataFrame, x: str, y: str, expected:
     return df.dropna(subset=[y, expected]).reset_index(drop=True)
 
 def _chart_key(chart: str) -> str:
+    """Normalise public chart aliases to internal chart keys."""
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t", "p'":"p_prime", "pprime":"p_prime", "u'":"u_prime", "uprime":"u_prime"}.get(key, key)
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t", "p'":"p_prime", "pprime":"p_prime", "u'":"u_prime", "uprime":"u_prime", "x_bar":"xbar", "x-bar":"xbar"}.get(key, key)
 
 
 def _validate_non_negative(values: pd.Series, chart_key: str) -> None:
+    """Reject impossible negative intervals for rare-event charts."""
     if (values < 0).any():
         label = "G" if chart_key == "g" else "T"
         raise ValueError(f"{label} chart intervals must be non-negative.")
 
 
 def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFrame:
+    """Calculate G and T chart fields using lightweight distribution limits."""
     values = out[y].astype(float)
     _validate_non_negative(values, chart_key)
     centre = float(values.mean()) if len(values) else np.nan
@@ -150,6 +167,7 @@ def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFram
 
 
 def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: str) -> pd.DataFrame:
+    """Calculate P-prime and U-prime observed/expected chart fields."""
     observed = out[y].astype(float)
     expected_values = out[expected].astype(float)
     if (expected_values < 0).any():
@@ -186,6 +204,71 @@ def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: s
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
     return out
 
+
+def _c4(n: float) -> float:
+    """Return the normal-theory correction factor for subgroup standard deviation."""
+    if n <= 1:
+        return np.nan
+    return float(np.sqrt(2 / (n - 1)) * np.exp(math.lgamma(n / 2) - math.lgamma((n - 1) / 2)))
+
+
+def _xbar_s_fields(raw: pd.DataFrame, x: str, y: str, chart_key: str) -> pd.DataFrame:
+    """Aggregate observation-level rows into Xbar or S chart subgroup rows."""
+    grouped = raw.groupby(x, sort=False)[y]
+    out = grouped.agg(subgroup_mean="mean", subgroup_std="std", subgroup_n="count").reset_index()
+    out["subgroup_std"] = out["subgroup_std"].fillna(0.0)
+    grand_mean = float((out["subgroup_mean"] * out["subgroup_n"]).sum() / out["subgroup_n"].sum()) if out["subgroup_n"].sum() else np.nan
+    sbar = float(out["subgroup_std"].mean()) if len(out) else np.nan
+    nbar = float(out["subgroup_n"].mean()) if len(out) else np.nan
+    c4 = _c4(nbar)
+    sigma = sbar / c4 if c4 == c4 and c4 > 0 else np.nan
+
+    out["chart"] = chart_key
+    out["point_index"] = np.arange(1, len(out) + 1)
+    out["baseline_period"] = False
+    out["baseline_label"] = ""
+    out["segment_id"] = 1
+    out["segment_label"] = "Segment 1"
+    out["target"] = np.nan
+    out["intervention_label"] = ""
+    out["intervention"] = False
+    out["step_change_label"] = ""
+    out["step_change"] = False
+    out["moving_range"] = np.nan
+    out["sigma"] = sigma
+
+    if chart_key == "xbar":
+        se = sigma / np.sqrt(nbar) if sigma == sigma and nbar > 0 else np.nan
+        centre = grand_mean
+        lcl = centre - 3 * se if se == se else np.nan
+        ucl = centre + 3 * se if se == se else np.nan
+        out["plot_value"] = out["subgroup_mean"]
+        out["centre_label"] = "Grand mean"
+    else:
+        centre = sbar
+        if c4 == c4 and c4 > 0:
+            factor = 3 * np.sqrt(max(0.0, 1 - c4**2)) / c4
+            lcl = max(0.0, centre * (1 - factor))
+            ucl = centre * (1 + factor)
+        else:
+            lcl = np.nan
+            ucl = np.nan
+        out["plot_value"] = out["subgroup_std"]
+        out["centre_label"] = "Mean subgroup standard deviation"
+
+    out["centre"] = centre
+    out["lcl"] = lcl
+    out["ucl"] = ucl
+    out["signal"] = ((out["plot_value"] < lcl) | (out["plot_value"] > ucl)).fillna(False).astype(bool)
+    out["signal_rule"] = np.where(out["signal"], f"Outside {chart_key.upper()} chart limits", "")
+    out["special_cause"] = out["signal"]
+    out["special_cause_rule"] = out["signal_rule"]
+    out["special_cause_direction"] = np.where(out["plot_value"] < lcl, "low", np.where(out["plot_value"] > ucl, "high", ""))
+    out["special_cause_type"] = np.where(out["signal"], "neutral", "")
+    out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
+    out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    return out
+
 def qic_table(
     data: pd.DataFrame,
     x: str,
@@ -204,17 +287,20 @@ def qic_table(
 ) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 0.8.0 supports run, I, MR, C, P, U, G, T, P-prime and U-prime charts. P and U charts
+    Version 1.0.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause fields for points outside limits, shifts and trends.
     Baseline periods, recalculation segments, targets, interventions and
     step changes are represented as additive table fields.
     """
     chart_key = _chart_key(chart)
+    if chart_key in {"xbar", "s"}:
+        raw = _ordered_numeric(data, x, y)
+        return _xbar_s_fields(raw, x, y, chart_key)
     out = _ordered_numeric_with_expected(data, x, y, expected) if chart_key in {"p_prime","u_prime"} and expected else _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
     if chart_key in {"p_prime","u_prime"} and expected is None: raise ValueError(f"chart={chart!r} requires an expected column.")
-    if chart_key not in {"run","i","mr","c","p","u","g","t","p_prime","u_prime"}: raise ValueError("v0.8.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'g', 't', 'p_prime', and 'u_prime'.")
+    if chart_key not in {"run","i","mr","c","p","u","xbar","s","g","t","p_prime","u_prime"}: raise ValueError("v1.0.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'xbar', 's', 'g', 't', 'p_prime', and 'u_prime'.")
     out["chart"] = chart_key
     out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes)
     if chart_key == "run":

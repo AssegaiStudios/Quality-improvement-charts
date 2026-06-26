@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.0 - 2026-06-09
+
+### Added
+
+- Stable public release metadata.
+- Xbar chart support.
+- S chart support.
+- End-user sample datasets in `sample_data/`.
+- Python sample dataset helpers:
+  - `sample_healthcare_qi_data()`
+  - `sample_subgroup_measurements()`
+- Working Xbar and S chart examples.
+- Expanded developer comments and docstrings across source modules.
+- v1.0 release tests for sample data, Xbar/S charts and version alignment.
+
+### Changed
+
+- Bumped package version to 1.0.0.
+- Marked package classifier as production/stable.
+- Updated README and documentation for stable release expectations.
+
+### Notes
+
+- Public APIs should avoid breaking changes from this release onward. Deprecations should be documented before removal.
+
 ## 0.9.0 - 2026-06-09
 
 ### Added

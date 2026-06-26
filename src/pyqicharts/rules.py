@@ -1,4 +1,9 @@
-"""Rule calculations used by pyqicharts."""
+"""Run-chart rule calculations used by pyqicharts.
+
+The functions here implement lightweight Anhoej-style diagnostics for run
+charts. The return object is intentionally small and serialisable enough to
+appear in chart summaries.
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 from statistics import NormalDist
@@ -23,6 +28,7 @@ class AnhoejResult:
         return self.signal_long_run or self.signal_few_crossings
 
 def _longest_run(signs: list[int]) -> int:
+    """Return the longest consecutive same-side sequence."""
     if not signs: return 0
     longest = current = 1; previous = signs[0]
     for sign in signs[1:]:
@@ -32,19 +38,23 @@ def _longest_run(signs: list[int]) -> int:
     return longest
 
 def _runs(signs: list[int]) -> int:
+    """Count how many runs of same-side values exist."""
     if not signs: return 0
     return 1 + sum(1 for a,b in zip(signs, signs[1:]) if a != b)
 
 def _crossings(signs: list[int]) -> int:
+    """Count centre-line crossings after median ties have been removed."""
     if not signs: return 0
     return sum(1 for a,b in zip(signs, signs[1:]) if a != b)
 
 def _expected_longest_run(n: int) -> int:
+    """Approximate the longest-run threshold used for early diagnostics."""
     if n <= 0: return 0
     if n < 10: return n
     return int(np.ceil(np.log2(n) + 3))
 
 def _lower_crossings_limit(n: int) -> int:
+    """Approximate the lower crossing threshold from a binomial model."""
     if n <= 1: return 0
     mean = (n - 1) * 0.5
     sd = np.sqrt((n - 1) * 0.25)
@@ -61,6 +71,8 @@ def anhoej_rules(values: Iterable[float]) -> AnhoejResult:
     median = float(series.median()) if len(series) else float("nan")
     if len(series) == 0:
         return AnhoejResult(median,0,0,0,0,0,0,False,False)
+    # Values equal to the median are omitted from the runs/crossings sequence,
+    # which is standard run-chart practice and prevents ties from hiding runs.
     signs = [1 if value > median else -1 for value in series if value != median]
     n_used = len(signs); runs = _runs(signs); crossings = _crossings(signs)
     longest = _longest_run(signs); expected = _expected_longest_run(n_used); lower = _lower_crossings_limit(n_used)

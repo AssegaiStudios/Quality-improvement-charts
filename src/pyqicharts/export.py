@@ -1,4 +1,9 @@
-"""Reporting exports for pyqicharts."""
+"""Reporting exports for pyqicharts.
+
+PNG export uses matplotlib, which is already part of the core package. Excel
+and PowerPoint export libraries are imported lazily so the core install stays
+lightweight until users ask for reporting features.
+"""
 from __future__ import annotations
 
 import json
@@ -9,12 +14,14 @@ import pandas as pd
 
 
 def _as_chart_list(charts_or_chart) -> list:
+    """Accept either one chart or a list/tuple of charts."""
     if isinstance(charts_or_chart, (list, tuple)):
         return list(charts_or_chart)
     return [charts_or_chart]
 
 
 def _missing_optional(package: str, extra: str = "reporting") -> ImportError:
+    """Build a consistent optional-dependency error message."""
     return ImportError(
         f"{package} is required for this export. Install it with "
         f"`pip install pyqicharts[{extra}]` or install {package!r} directly."
@@ -33,6 +40,8 @@ def export_png(chart, path: str | Path, dpi: int = 150) -> Path:
 def export_excel(chart, path: str | Path, include_image: bool = True) -> Path:
     """Export chart data and SPC summaries to an Excel workbook."""
 
+    # Optional import boundary: users can still import pyqicharts without
+    # openpyxl installed, and only see this error when Excel export is used.
     try:
         from openpyxl import Workbook
         from openpyxl.drawing.image import Image as ExcelImage
@@ -77,6 +86,7 @@ def export_excel(chart, path: str | Path, include_image: bool = True) -> Path:
 def export_powerpoint(chart, path: str | Path, title: str | None = None, summary_text: str | None = None) -> Path:
     """Export one or more charts to a simple PowerPoint deck."""
 
+    # Optional import boundary for PowerPoint reporting.
     try:
         from pptx import Presentation
         from pptx.util import Inches, Pt
@@ -120,6 +130,8 @@ def create_report_bundle(charts: Iterable, output_dir: str | Path) -> dict:
 
     excel_file = str(export_excel(charts, folder / "report.xlsx")) if charts else ""
     pptx_file = str(export_powerpoint(charts, folder / "report.pptx")) if charts else ""
+    # Metadata gives automation/reporting workflows a simple manifest of files
+    # created by the bundle.
     metadata = {
         "chart_count": len(charts),
         "png_files": png_files,

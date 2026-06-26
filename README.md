@@ -4,27 +4,25 @@ Quality Improvement (QI) and Statistical Process Control (SPC) charts for Python
 
 pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI charting. It is inspired by qicharts2, NHS Making Data Count, Anhoej run chart rules, and Shewhart SPC methodology.
 
-## Current Status
+## Version
 
-**Version:** 0.9.0
+**1.0.0**
 
-pyqicharts is in pre-1.0 active development. It currently provides run charts, Individuals/XmR charts, C/P/U charts, G/T rare-event charts, P-prime/U-prime risk-adjusted charts, Pareto charts, NHS-style special cause detection, process context features, reporting exports and Power BI-friendly tables.
+This is the first stable public release. The simple `qic(...)` interface remains the centre of the package, with table outputs available through `qic_table(...)`.
 
-v0.9 focuses on documentation, validation fixtures and release hardening. It is not yet a v1.0 stability declaration.
-
-## Installation
+## Install
 
 ```bash
 pip install pyqicharts
 ```
 
-Reporting features use optional dependencies:
+Optional reporting exports:
 
 ```bash
 pip install pyqicharts[reporting]
 ```
 
-For local development:
+Development:
 
 ```bash
 pip install -e .[dev]
@@ -34,41 +32,36 @@ pytest
 ## Quick Start
 
 ```python
-import pandas as pd
-from pyqicharts import qic
+from pyqicharts import qic, sample_healthcare_qi_data
 
-df = pd.DataFrame({
-    "month": range(1, 13),
-    "value": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
-})
+df = sample_healthcare_qi_data()
 
-chart = qic(data=df, x="month", y="value", chart="i")
+chart = qic(
+    data=df,
+    x="month",
+    y="wait_time",
+    chart="i",
+    improvement="low is good",
+    baseline_points=6,
+    target=25,
+)
+
 chart.figure
+chart.table.head()
 ```
 
-## Documentation
+## Sample Data
 
-Documentation files live in `docs/`:
+End-user sample CSVs are included in `sample_data/`:
 
-- `installation.md`
-- `quickstart.md`
-- `run_charts.md`
-- `individuals_charts.md`
-- `attribute_charts.md`
-- `rare_event_charts.md`
-- `risk_adjusted_charts.md`
-- `reporting.md`
-- `powerbi.md`
-- `api_reference.md`
-- `validation.md`
+- `sample_healthcare_qi_data.csv`
+- `sample_subgroup_measurements.csv`
 
-## Validation
+The same data is available from Python:
 
-The `validation/` folder contains small deterministic datasets and expected outputs used by the test suite. These are regression fixtures for release hardening, not a final independent statistical validation pack.
-
-## Examples
-
-The `examples/` folder includes runnable examples for supported chart families, reporting and Power BI helpers. Xbar and S chart files are included as explicit placeholders because those chart types remain planned.
+```python
+from pyqicharts import sample_healthcare_qi_data, sample_subgroup_measurements
+```
 
 ## Supported Charts
 
@@ -80,23 +73,39 @@ The `examples/` folder includes runnable examples for supported chart families, 
 | C chart | Supported |
 | P chart | Supported |
 | U chart | Supported |
+| Xbar chart | Supported |
+| S chart | Supported |
 | G chart | Supported |
 | T chart | Supported |
 | P-prime chart | Supported |
 | U-prime chart | Supported |
 | Pareto chart | Supported |
-| Xbar chart | Planned |
-| S chart | Planned |
 
-## Roadmap
+## Reporting
 
-### v1.0.0 - Stable Release
+```python
+from pyqicharts import export_png, export_excel, export_powerpoint, create_report_bundle
 
-- Complete public API documentation
-- Expanded independently reviewed validation datasets
-- Production-ready packaging metadata
-- Backwards compatibility policy
-- Clear scope and limitations
+chart.save_png("chart.png")
+export_png(chart, "chart.png")
+export_excel(chart, "report.xlsx")
+export_powerpoint(chart, "report.pptx")
+create_report_bundle([chart], "report")
+```
+
+Excel and PowerPoint helpers require `pyqicharts[reporting]`.
+
+## Validation
+
+The `validation/` folder contains deterministic datasets and expected outputs used by the test suite. These are regression fixtures and starter validation references. External clinical/statistical validation should still be performed before high-stakes operational use.
+
+## Documentation
+
+See `docs/` for installation, quickstart, chart-family guides, reporting, Power BI, API reference and validation notes.
+
+## Compatibility
+
+From v1.0 onward, public APIs should avoid breaking changes. Deprecations should be documented before removal.
 
 ## License
 

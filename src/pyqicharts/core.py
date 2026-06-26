@@ -1,4 +1,10 @@
-"""Chart construction functions for pyqicharts."""
+"""Matplotlib chart construction for pyqicharts.
+
+`qic()` is intentionally a thin plotting wrapper around `qic_table()`. The
+calculation table is always retained on the returned `QicResult`, so users can
+move between scripts, notebooks, Excel exports and Power BI without rerunning
+separate calculation logic.
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
@@ -11,7 +17,7 @@ from .themes import get_theme
 
 @dataclass
 class QicResult:
-    """Result returned by qic()."""
+    """Container returned by `qic()` with data, calculations and figure objects."""
     data: pd.DataFrame
     chart: str
     x: str
@@ -26,9 +32,11 @@ class QicResult:
     figure: object
     axes: object
     def save_png(self, path: str, dpi: int = 150):
+        """Save the chart figure as a PNG file."""
         from .export import export_png
         return export_png(self, path, dpi=dpi)
     def summary(self) -> dict:
+        """Return a compact dictionary summary for reports and dashboards."""
         out = {"chart": self.chart, "centre_label": self.centre_label, "centre": self.centre, "lcl": self.lcl, "ucl": self.ucl, "signals": int(self.signals.sum())}
         if self.anhoej is not None: out["anhoej"] = self.anhoej
         return out
@@ -36,10 +44,12 @@ class QicResult:
         plt.show()
 
 def _normalise_chart_name(chart: str) -> str:
+    """Normalise public chart aliases to the internal chart key."""
     key = chart.lower().replace("-", "_").replace(" ", "_")
-    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t", "p'":"p_prime", "pprime":"p_prime", "u'":"u_prime", "uprime":"u_prime"}.get(key, key)
+    return {"individuals":"i", "movingrange":"mr", "moving_range":"mr", "count":"c", "proportion":"p", "rate":"u", "rare_event":"g", "time_between":"t", "p'":"p_prime", "pprime":"p_prime", "u'":"u_prime", "uprime":"u_prime", "x_bar":"xbar", "x-bar":"xbar"}.get(key, key)
 
 def _scalar_or_none(series: pd.Series) -> float | None:
+    """Return the first non-missing scalar from a repeated table column."""
     non_null = series.dropna()
     return None if len(non_null) == 0 else float(non_null.iloc[0])
 
@@ -64,7 +74,7 @@ def qic(
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 0.8.0 supports run, I, MR, C, P, U, G, T, P-prime and U-prime charts. P and U charts
+    Version 1.0.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause colouring and interpretation, plus baseline, recalculation,
     target, intervention and step-change metadata.
@@ -94,6 +104,8 @@ def qic(
     elif chart_key == "g": ylabel = f"Cases between events: {y}"
     elif chart_key == "t": ylabel = f"Time between events: {y}"
     elif chart_key in {"p_prime", "u_prime"}: ylabel = f"Observed / expected: {y}"
+    elif chart_key == "xbar": ylabel = f"Subgroup mean of {y}"
+    elif chart_key == "s": ylabel = f"Subgroup standard deviation of {y}"
     ax.plot(table[x], table["plot_value"], marker="o", linewidth=1.8, color=style.line, markerfacecolor=style.marker, markeredgecolor=style.marker)
     signal_rows = table[table["signal"]]
     if not signal_rows.empty:
@@ -107,6 +119,8 @@ def qic(
         else:
             ax.scatter(signal_rows[x], signal_rows["plot_value"], s=90, color=style.signal, marker="o", zorder=5, label="Signal")
     centre = _scalar_or_none(table["centre"]); lcl = _scalar_or_none(table["lcl"]); ucl = _scalar_or_none(table["ucl"]); centre_label = str(table["centre_label"].iloc[0]) if len(table) else "Centre"
+    # Segment-aware horizontal lines let baseline/recalculation periods share
+    # one plot without pretending a single limit applies to every segment.
     for segment_id, rows in table.groupby("segment_id" if "segment_id" in table else table.index, sort=True):
         first_x = rows[x].iloc[0]; last_x = rows[x].iloc[-1]
         seg_centre = _scalar_or_none(rows["centre"]); seg_lcl = _scalar_or_none(rows["lcl"]); seg_ucl = _scalar_or_none(rows["ucl"])

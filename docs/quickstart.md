@@ -1,18 +1,14 @@
 # Quickstart
 
 ```python
-import pandas as pd
-from pyqicharts import qic, qic_table
+from pyqicharts import qic, qic_table, sample_healthcare_qi_data
 
-df = pd.DataFrame({
-    "month": range(1, 13),
-    "value": [12, 13, 14, 12, 11, 15, 16, 17, 15, 14, 18, 19],
-})
+df = sample_healthcare_qi_data()
 
-chart = qic(data=df, x="month", y="value", chart="i")
+chart = qic(data=df, x="month", y="wait_time", chart="i", improvement="low is good")
 chart.figure
 
-table = qic_table(data=df, x="month", y="value", chart="i")
+table = qic_table(data=df, x="month", y="wait_time", chart="i")
 ```
 
 The `qic(...)` function returns a `QicResult` containing the original data, calculated table, matplotlib figure and axes.

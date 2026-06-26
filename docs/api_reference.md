@@ -7,6 +7,8 @@ Core charting:
 - `paretochart(data, category, count=None)`
 - `pareto_table(data, category, count=None)`
 
+Supported `chart=` values include `run`, `i`, `mr`, `c`, `p`, `u`, `xbar`, `s`, `g`, `t`, `p_prime` and `u_prime`.
+
 Reporting:
 
 - `export_png(chart, path)`
@@ -20,4 +22,4 @@ Power BI:
 - `spc_summary_table(chart)`
 - `special_cause_summary_table(chart)`
 
-Example datasets are exposed from the package root.
+Example and sample datasets are exposed from the package root, including `sample_healthcare_qi_data()` and `sample_subgroup_measurements()`.

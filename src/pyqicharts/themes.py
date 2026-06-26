@@ -1,4 +1,8 @@
-"""Chart themes used by pyqicharts."""
+"""Chart themes used by pyqicharts.
+
+Themes are intentionally small immutable dataclasses. They give the plotting
+layer named colours without introducing a full styling framework.
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 
@@ -13,6 +17,8 @@ class Theme:
     grid_alpha: float = 0.25
 
 _THEMES = {
+    # The NHS palette is useful for Making Data Count-style charts while the
+    # other themes keep notebooks and publication outputs readable.
     "default": Theme("#1f77b4", "#1f77b4", "#ff7f0e", "#7f7f7f", "#d62728"),
     "nhs": Theme("#005EB8", "#005EB8", "#007F3B", "#768692", "#DA291C"),
     "publication": Theme("#222222", "#222222", "#555555", "#999999", "#000000", 0.18),
