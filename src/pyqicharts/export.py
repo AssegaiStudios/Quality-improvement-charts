@@ -49,7 +49,7 @@ def export_excel(chart, path: str | Path, include_image: bool = True) -> Path:
     except ImportError as exc:
         raise _missing_optional("openpyxl") from exc
 
-    from .powerbi import special_cause_summary_table, spc_summary_table
+    from .powerbi import kpi_table, signal_table, special_cause_summary_table, spc_summary_table
 
     charts = _as_chart_list(chart)
     output = Path(path)
@@ -70,6 +70,14 @@ def export_excel(chart, path: str | Path, include_image: bool = True) -> Path:
         signals_sheet = workbook.create_sheet(f"Special causes{suffix}")
         for row in dataframe_to_rows(special_cause_summary_table(chart_item), index=False, header=True):
             signals_sheet.append(row)
+
+        signal_schema_sheet = workbook.create_sheet(f"Signal table{suffix}")
+        for row in dataframe_to_rows(signal_table(chart_item), index=False, header=True):
+            signal_schema_sheet.append(row)
+
+        kpi_sheet = workbook.create_sheet(f"KPI summary{suffix}")
+        for row in dataframe_to_rows(kpi_table(chart_item), index=False, header=True):
+            kpi_sheet.append(row)
 
     if include_image:
         for index, chart_item in enumerate(charts, start=1):

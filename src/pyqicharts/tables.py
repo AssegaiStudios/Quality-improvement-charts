@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 import numpy as np
 import pandas as pd
+from .nelson import nelson_rule_signals, shewhart_rule_signals
 from .nhs_rules import NhsRuleConfig, nhs_xmr_signals
 from .rules import anhoej_rules
 
@@ -51,6 +52,39 @@ def _marker_labels(out: pd.DataFrame, x: str, markers: list[dict] | None) -> pd.
     return labels
 
 
+def _point_flags(out: pd.DataFrame, x: str, points: list | None) -> pd.Series:
+    """Return booleans for rows addressed by x value or 1-based row number."""
+
+    flags = pd.Series(False, index=out.index)
+    n = len(out)
+    for point in points or []:
+        pos = _point_to_position(point, out[x], n)
+        if pos is not None:
+            flags.iloc[pos] = True
+    return flags
+
+
+def _phase_labels(out: pd.DataFrame, x: str, phases: list[dict] | None) -> pd.Series:
+    """Create qicharts-style phase labels from ordered phase start markers."""
+
+    labels = pd.Series("", index=out.index, dtype=object)
+    if not phases:
+        return labels
+    starts: list[tuple[int, str]] = []
+    for phase in phases:
+        if not isinstance(phase, dict):
+            continue
+        point = phase.get("start", phase.get("point"))
+        pos = _point_to_position(point, out[x], len(out))
+        if pos is not None:
+            starts.append((pos, str(phase.get("label", f"Phase {len(starts) + 1}"))))
+    starts = sorted(starts)
+    for index, (start, label) in enumerate(starts):
+        end = starts[index + 1][0] if index + 1 < len(starts) else len(out)
+        labels.iloc[start:end] = label
+    return labels
+
+
 def _add_process_metadata(
     out: pd.DataFrame,
     x: str,
@@ -59,6 +93,8 @@ def _add_process_metadata(
     target: float | int | None,
     interventions: list[dict] | None,
     step_changes: list[dict] | None,
+    exclude_points: list | None = None,
+    phases: list[dict] | None = None,
 ) -> pd.DataFrame:
     """Add process-context columns used across all chart tables."""
     out["point_index"] = np.arange(1, len(out) + 1)
@@ -71,6 +107,8 @@ def _add_process_metadata(
     out["intervention"] = out["intervention_label"] != ""
     out["step_change_label"] = _marker_labels(out, x, step_changes)
     out["step_change"] = out["step_change_label"] != ""
+    out["excluded"] = _point_flags(out, x, exclude_points)
+    out["phase_label"] = _phase_labels(out, x, phases)
     return out
 
 
@@ -80,6 +118,48 @@ def _segment_source(values: pd.Series, segment_index: pd.Index, baseline_points:
     if baseline_points and int(segment_index[0]) == 0:
         return segment_values.iloc[: int(baseline_points)]
     return segment_values
+
+
+def _normalise_rules(rules: str | None) -> str | None:
+    """Normalise configurable rule-set names."""
+
+    if rules is None:
+        return None
+    key = str(rules).strip().lower()
+    if key in {"none", "off", ""}:
+        return None
+    if key not in {"nelson", "shewhart", "all"}:
+        raise ValueError("rules must be one of None, 'nelson', 'shewhart', or 'all'.")
+    return key
+
+
+def _add_rule_metadata(out: pd.DataFrame, x: str, chart_key: str, rules: str | None) -> pd.DataFrame:
+    """Attach summary counts for configured Nelson/Shewhart rule sets."""
+
+    out["signal_count"] = out["signal"].fillna(False).astype(bool).astype(int) if "signal" in out else 0
+    out["rule_set"] = rules or ""
+    if not rules or "plot_value" not in out or "centre" not in out or "sigma" not in out:
+        return out
+    sigma_values = pd.to_numeric(out["sigma"], errors="coerce").dropna() if "sigma" in out else pd.Series(dtype=float)
+    centre_values = pd.to_numeric(out["centre"], errors="coerce").dropna()
+    if sigma_values.empty or centre_values.empty:
+        return out
+    values = pd.to_numeric(out["plot_value"], errors="coerce")
+    centre = float(centre_values.iloc[0])
+    sigma = float(sigma_values.iloc[0])
+    frames = []
+    if rules in {"nelson", "all"}:
+        frames.append(nelson_rule_signals(values, centre=centre, sigma=sigma, chart_type=chart_key, x_values=out[x]))
+    if rules in {"shewhart", "all"}:
+        frames.append(shewhart_rule_signals(values, centre=centre, sigma=sigma, chart_type=chart_key, x_values=out[x]))
+    if frames:
+        detected = pd.concat(frames, ignore_index=True)
+        out["signal_count"] = out["signal_count"] + 0
+        for _, signal in detected.iterrows():
+            start = int(signal["start_index"]) - 1
+            end = int(signal["end_index"]) - 1
+            out.loc[start:end, "signal_count"] = out.loc[start:end, "signal_count"] + 1
+    return out
 
 def _ordered_numeric(data: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
     """Return x/y rows with y coerced to numeric and missing y removed."""
@@ -163,6 +243,7 @@ def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFram
     out["special_cause_type"] = np.where(out["signal"], "neutral", "")
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    out["sigma"] = np.nan
     return out
 
 
@@ -202,6 +283,7 @@ def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: s
     out["special_cause_type"] = np.where(out["signal"], "neutral", "")
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    out["sigma"] = se
     return out
 
 
@@ -267,6 +349,8 @@ def _xbar_s_fields(raw: pd.DataFrame, x: str, y: str, chart_key: str) -> pd.Data
     out["special_cause_type"] = np.where(out["signal"], "neutral", "")
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    out["signal_count"] = out["signal"].astype(int)
+    out["rule_set"] = ""
     return out
 
 def qic_table(
@@ -284,31 +368,43 @@ def qic_table(
     target: float | int | None = None,
     interventions: list[dict] | None = None,
     step_changes: list[dict] | None = None,
+    freeze_points: list | None = None,
+    break_points: list | None = None,
+    exclude_points: list | None = None,
+    phases: list[dict] | None = None,
+    rules: str | None = None,
 ) -> pd.DataFrame:
     """Return QI/SPC chart calculations as a pandas DataFrame.
 
-    Version 1.0.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
+    Version 1.1.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause fields for points outside limits, shifts and trends.
     Baseline periods, recalculation segments, targets, interventions and
-    step changes are represented as additive table fields.
+    step changes are represented as additive table fields. qicharts-style
+    phase aliases are also available as additive metadata.
     """
     chart_key = _chart_key(chart)
+    rule_set = _normalise_rules(rules)
+    if baseline_points is None and freeze_points:
+        baseline_points = int(freeze_points[0])
+    if break_points:
+        recalculation_points = list(recalculation_points or []) + list(break_points)
     if chart_key in {"xbar", "s"}:
         raw = _ordered_numeric(data, x, y)
-        return _xbar_s_fields(raw, x, y, chart_key)
+        return _add_rule_metadata(_xbar_s_fields(raw, x, y, chart_key), x, chart_key, rule_set)
     out = _ordered_numeric_with_expected(data, x, y, expected) if chart_key in {"p_prime","u_prime"} and expected else _ordered_numeric_with_denominator(data, x, y, denominator) if chart_key in {"p","u"} and denominator else _ordered_numeric(data, x, y)
     if chart_key in {"p","u"} and denominator is None: raise ValueError(f"chart={chart!r} requires a denominator column.")
     if chart_key in {"p_prime","u_prime"} and expected is None: raise ValueError(f"chart={chart!r} requires an expected column.")
-    if chart_key not in {"run","i","mr","c","p","u","xbar","s","g","t","p_prime","u_prime"}: raise ValueError("v1.0.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'xbar', 's', 'g', 't', 'p_prime', and 'u_prime'.")
+    if chart_key not in {"run","i","mr","c","p","u","xbar","s","g","t","p_prime","u_prime"}: raise ValueError("v1.1.0 supports chart='run', 'i', 'mr', 'c', 'p', 'u', 'xbar', 's', 'g', 't', 'p_prime', and 'u_prime'.")
     out["chart"] = chart_key
-    out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes)
+    out = _add_process_metadata(out, x, baseline_points, recalculation_points, target, interventions, step_changes, exclude_points, phases)
     if chart_key == "run":
         centre_source = out[y].iloc[: int(baseline_points)] if baseline_points else out[y]
+        centre_source = centre_source[~out.loc[centre_source.index, "excluded"]]
         rules = anhoej_rules(centre_source); out["plot_value"] = out[y]; out["centre"] = rules.median; out["centre_label"] = "Median"
         out["lcl"] = np.nan; out["ucl"] = np.nan; out["moving_range"] = np.nan; out["signal"] = False; out["signal_rule"] = ""
         out["anhoej_signal_long_run"] = rules.signal_long_run; out["anhoej_signal_few_crossings"] = rules.signal_few_crossings
-        return out
+        return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key == "i":
         values = out[y].astype(float); mr = values.diff().abs()
         out["plot_value"] = values; out["centre"] = np.nan; out["centre_label"] = "Mean"; out["lcl"] = np.nan; out["ucl"] = np.nan
@@ -328,31 +424,33 @@ def qic_table(
             out.loc[group.index, "sigma"] = sigma
         nhs = nhs_xmr_signals(values, out["centre"], out["lcl"], out["ucl"], improvement, NhsRuleConfig(shift_points, trend_points))
         out["signal"] = nhs["special_cause"].astype(bool); out["signal_rule"] = nhs["special_cause_rule"]
-        return pd.concat([out, nhs], axis=1)
+        out = pd.concat([out, nhs], axis=1)
+        out.loc[out["excluded"], ["signal", "special_cause"]] = False
+        return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key in {"g", "t"}:
-        return _rare_event_fields(out, y, chart_key)
+        return _add_rule_metadata(_rare_event_fields(out, y, chart_key), x, chart_key, rule_set)
     if chart_key in {"p_prime", "u_prime"}:
-        return _risk_adjusted_fields(out, y, expected, chart_key)
+        return _add_rule_metadata(_risk_adjusted_fields(out, y, expected, chart_key), x, chart_key, rule_set)
     if chart_key == "mr":
         values = out[y].astype(float); mr = values.diff().abs(); mrbar = float(mr.dropna().mean()) if len(mr.dropna()) else np.nan
         ucl = 3.267 * mrbar if mrbar == mrbar else np.nan; signal = (mr > ucl) if mrbar == mrbar else pd.Series(False, index=out.index)
         out["moving_range"] = mr; out["plot_value"] = mr; out["centre"] = mrbar; out["centre_label"] = "Mean moving range"; out["lcl"] = 0.0; out["ucl"] = ucl
-        out["signal"] = signal.fillna(False).astype(bool); out["signal_rule"] = np.where(out["signal"], "MR above UCL", ""); out["mrbar"] = mrbar; return out
+        out["signal"] = signal.fillna(False).astype(bool); out["signal_rule"] = np.where(out["signal"], "MR above UCL", ""); out["mrbar"] = mrbar; out["sigma"] = mrbar / 1.128 if mrbar == mrbar else np.nan; return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key == "c":
         counts = out[y].astype(float); centre = float(counts.mean()) if len(counts) else np.nan; sqrt_c = np.sqrt(centre) if centre == centre else np.nan
         lcl = max(0.0, centre - 3*sqrt_c) if sqrt_c == sqrt_c else np.nan; ucl = centre + 3*sqrt_c if sqrt_c == sqrt_c else np.nan
         signal = ((counts < lcl) | (counts > ucl)) if sqrt_c == sqrt_c else pd.Series(False, index=out.index)
         out["plot_value"] = counts; out["centre"] = centre; out["centre_label"] = "Mean count"; out["lcl"] = lcl; out["ucl"] = ucl
-        out["moving_range"] = np.nan; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Outside C chart limits", ""); return out
+        out["moving_range"] = np.nan; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Outside C chart limits", ""); out["sigma"] = sqrt_c; return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key == "p":
         events = out[y].astype(float); denom = out[denominator].astype(float); proportion = events / denom; pbar = float(events.sum()/denom.sum()) if denom.sum() > 0 else np.nan
         se = np.sqrt(pbar*(1-pbar)/denom) if pbar == pbar else np.nan; lcl = np.maximum(0, pbar - 3*se); ucl = np.minimum(1, pbar + 3*se); signal = (proportion < lcl) | (proportion > ucl)
         out["plot_value"] = proportion; out["centre"] = pbar; out["centre_label"] = "Mean proportion"; out["lcl"] = lcl; out["ucl"] = ucl
-        out["moving_range"] = np.nan; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Outside P chart limits", ""); return out
+        out["moving_range"] = np.nan; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Outside P chart limits", ""); out["sigma"] = se; return _add_rule_metadata(out, x, chart_key, rule_set)
     events = out[y].astype(float); denom = out[denominator].astype(float); rate = events / denom; ubar = float(events.sum()/denom.sum()) if denom.sum() > 0 else np.nan
     se = np.sqrt(ubar/denom) if ubar == ubar else np.nan; lcl = np.maximum(0, ubar - 3*se); ucl = ubar + 3*se; signal = (rate < lcl) | (rate > ucl)
     out["plot_value"] = rate; out["centre"] = ubar; out["centre_label"] = "Mean rate"; out["lcl"] = lcl; out["ucl"] = ucl
-    out["moving_range"] = np.nan; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Outside U chart limits", ""); return out
+    out["moving_range"] = np.nan; out["signal"] = signal.astype(bool); out["signal_rule"] = np.where(out["signal"], "Outside U chart limits", ""); out["sigma"] = se; return _add_rule_metadata(out, x, chart_key, rule_set)
 
 def pareto_table(data: pd.DataFrame, category: str, count: str | None = None) -> pd.DataFrame:
     """Return Pareto calculations as a pandas DataFrame."""

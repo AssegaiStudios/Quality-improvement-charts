@@ -1,7 +1,7 @@
 import matplotlib
 matplotlib.use("Agg")
 import pandas as pd
-from pyqicharts import paretochart, qic
+from pyqicharts import pareto_chart, paretochart, qic
 
 def sample_df():
     return pd.DataFrame({"month": range(1,7), "value": [10,11,10,13,12,14], "count": [3,4,2,5,6,4], "denominator": [100,110,95,105,115,108], "category": ["A","B","A","C","A","B"]})
@@ -26,3 +26,6 @@ def test_qic_u_returns_result():
 
 def test_paretochart_returns_table():
     result = paretochart(sample_df(), "category", theme="nhs"); assert result.table["count"].sum() == 6; assert result.figure is not None
+
+def test_pareto_chart_alias_returns_table():
+    result = pareto_chart(sample_df(), "category", theme="nhs"); assert result.table["count"].sum() == 6; assert result.figure is not None

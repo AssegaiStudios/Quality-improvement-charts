@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from .rules import AnhoejResult, anhoej_rules
+from .signals import table_signals
 from .tables import qic_table
 from .themes import get_theme
 
@@ -40,6 +41,9 @@ class QicResult:
         out = {"chart": self.chart, "centre_label": self.centre_label, "centre": self.centre, "lcl": self.lcl, "ucl": self.ucl, "signals": int(self.signals.sum())}
         if self.anhoej is not None: out["anhoej"] = self.anhoej
         return out
+    def signal_table(self) -> pd.DataFrame:
+        """Return detected signals using the stable v1.1 signal schema."""
+        return table_signals(self.table, self.chart, self.x)
     def show(self):
         plt.show()
 
@@ -71,10 +75,15 @@ def qic(
     target: float | int | None = None,
     interventions: list[dict] | None = None,
     step_changes: list[dict] | None = None,
+    freeze_points: list | None = None,
+    break_points: list | None = None,
+    exclude_points: list | None = None,
+    phases: list[dict] | None = None,
+    rules: str | None = None,
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 1.0.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
+    Version 1.1.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause colouring and interpretation, plus baseline, recalculation,
     target, intervention and step-change metadata.
@@ -95,6 +104,11 @@ def qic(
         target=target,
         interventions=interventions,
         step_changes=step_changes,
+        freeze_points=freeze_points,
+        break_points=break_points,
+        exclude_points=exclude_points,
+        phases=phases,
+        rules=rules,
     )
     fig, ax = plt.subplots(figsize=figsize)
     ylabel = y

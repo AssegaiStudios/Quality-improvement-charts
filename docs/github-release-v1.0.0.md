@@ -1,15 +1,21 @@
 # pyqicharts v1.0.0
 
-First stable public release of pyqicharts.
+Interim parity-readiness rebuild of pyqicharts. This release preserves the v1.0 API surface while making the validation and parity status explicit.
 
 ## Added
 
 - Xbar charts
 - S charts
 - End-user sample datasets
-- Stable release metadata
+- Interim beta release metadata
+- Chart-by-chart validation fixtures
+- Parity report with known gaps
 - Expanded source comments and developer notes
 - v1.0 release tests
+
+## Important Scope Note
+
+This archive does not claim final qicharts2, qicharts or NHS workbook parity. See `PARITY_REPORT.md` before using the package as validated statistical evidence.
 
 ## Install
 

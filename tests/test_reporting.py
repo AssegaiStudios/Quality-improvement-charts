@@ -3,6 +3,7 @@ import json
 
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
@@ -28,6 +29,29 @@ def test_png_file_is_created(tmp_path):
     output = export_png(chart, tmp_path / "chart.png")
     assert output.exists()
     assert output.stat().st_size > 0
+
+
+def test_every_chart_type_exports_png(tmp_path):
+    cases = [
+        ("run", pd.DataFrame({"x": range(1, 9), "y": [10, 11, 9, 10, 12, 11, 10, 9]}), {}),
+        ("i", pd.DataFrame({"x": range(1, 9), "y": [10, 11, 9, 10, 12, 11, 10, 9]}), {}),
+        ("mr", pd.DataFrame({"x": range(1, 9), "y": [10, 11, 9, 10, 12, 11, 10, 9]}), {}),
+        ("c", pd.DataFrame({"x": range(1, 9), "y": [2, 4, 3, 5, 4, 3, 6, 4]}), {}),
+        ("p", pd.DataFrame({"x": range(1, 9), "y": [2, 4, 3, 5, 4, 3, 6, 4], "n": [100] * 8}), {"denominator": "n"}),
+        ("u", pd.DataFrame({"x": range(1, 9), "y": [2, 4, 3, 5, 4, 3, 6, 4], "n": [50] * 8}), {"denominator": "n"}),
+        ("xbar", pd.DataFrame({"x": [1, 1, 1, 2, 2, 2, 3, 3, 3], "y": [10, 11, 9, 12, 11, 10, 9, 10, 11]}), {}),
+        ("s", pd.DataFrame({"x": [1, 1, 1, 2, 2, 2, 3, 3, 3], "y": [10, 11, 9, 12, 11, 10, 9, 10, 11]}), {}),
+        ("g", pd.DataFrame({"x": range(1, 9), "y": [12, 18, 25, 20, 15, 22, 19, 24]}), {}),
+        ("t", pd.DataFrame({"x": range(1, 9), "y": [20, 25, 30, 22, 18, 35, 28, 26]}), {}),
+        ("p_prime", pd.DataFrame({"x": range(1, 9), "y": [18, 20, 19, 22, 20, 24, 25, 21], "expected": [20] * 8}), {"expected": "expected"}),
+        ("u_prime", pd.DataFrame({"x": range(1, 9), "y": [18, 20, 19, 22, 20, 24, 25, 21], "expected": [20] * 8}), {"expected": "expected"}),
+    ]
+    for chart_type, frame, kwargs in cases:
+        chart = qic(frame, "x", "y", chart=chart_type, **kwargs)
+        output = export_png(chart, tmp_path / f"{chart_type}.png")
+        assert output.exists()
+        assert output.stat().st_size > 0
+        plt.close(chart.figure)
 
 
 def test_chart_save_png_file_is_created(tmp_path):

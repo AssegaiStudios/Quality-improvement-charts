@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import pandas as pd
 
+from .signals import SIGNAL_SCHEMA_VERSION, table_signals
+
 
 def powerbi_table(chart) -> pd.DataFrame:
     """Return all calculated chart rows plus chart metadata columns."""
@@ -76,3 +78,33 @@ def special_cause_summary_table(chart) -> pd.DataFrame:
         if col in out.columns
     ]
     return out[columns].reset_index(drop=True)
+
+
+def signal_table(chart) -> pd.DataFrame:
+    """Return detected chart signals using the stable v1.1 schema."""
+
+    return table_signals(chart.table, chart.chart, chart.x)
+
+
+def kpi_table(chart) -> pd.DataFrame:
+    """Return one-row KPI fields for Power BI and dashboard datasets."""
+
+    table = chart.table.copy()
+    latest = table.iloc[-1] if len(table) else pd.Series(dtype=object)
+    return pd.DataFrame(
+        [
+            {
+                "schema_version": SIGNAL_SCHEMA_VERSION,
+                "chart_type": chart.chart,
+                "measure": chart.y,
+                "rows": len(table),
+                "centre": chart.centre,
+                "lcl": chart.lcl,
+                "ucl": chart.ucl,
+                "signal_count": int(chart.signals.sum()),
+                "latest_x": latest.get(chart.x, None),
+                "latest_value": latest.get("plot_value", None),
+                "latest_signal": bool(latest.get("signal", False)) if len(table) else False,
+            }
+        ]
+    )

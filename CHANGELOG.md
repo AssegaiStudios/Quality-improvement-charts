@@ -1,29 +1,54 @@
 # Changelog
 
-## 1.0.0 - 2026-06-09
+## 1.1.0 - 2026-06-09
 
 ### Added
 
-- Stable public release metadata.
+- Nelson Rules 1-8 via `nelson_rule_signals(...)`.
+- Shewhart-compatible rule helper via `shewhart_rule_signals(...)`.
+- Shared signal schema via `Signal`, `signals_to_frame(...)` and `signal_table(...)`.
+- Additive `rules="nelson"`, `rules="shewhart"` and `rules="all"` support in `qic(...)` and `qic_table(...)`.
+- qicharts-style phase aliases: `freeze_points`, `break_points`, `exclude_points` and `phases`.
+- Power BI `signal_table(...)` and `kpi_table(...)` helpers.
+- Excel export sheets for signal schema and KPI summary.
+- v1.1 tests for Nelson metadata, signal schema, rule configuration, phase aliases and Power BI KPI output.
+
+### Changed
+
+- Bumped package version to 1.1.0.
+- Updated docs and parity report to reflect completed local validation and remaining external qicharts/qicharts2/NHS parity evidence.
+
+### Notes
+
+- v1.1.0 is a parity-readiness release. Full qicharts/qicharts2/NHS parity is not claimed until external reference-output comparisons are available and pass without unexplained differences.
+
+## 1.0.0 interim rebuild - 2026-06-09
+
+### Added
+
+- Interim v1.0 release metadata; this is not a final parity-complete release.
 - Xbar chart support.
 - S chart support.
 - End-user sample datasets in `sample_data/`.
+- Chart-by-chart interim regression fixtures in `validation_data/`.
+- `PARITY_REPORT.md` documenting completed evidence and remaining parity gaps.
 - Python sample dataset helpers:
   - `sample_healthcare_qi_data()`
   - `sample_subgroup_measurements()`
 - Working Xbar and S chart examples.
 - Expanded developer comments and docstrings across source modules.
-- v1.0 release tests for sample data, Xbar/S charts and version alignment.
+- v1.0 release tests for sample data, Xbar/S charts, validation fixtures and version alignment.
 
 ### Changed
 
 - Bumped package version to 1.0.0.
-- Marked package classifier as production/stable.
-- Updated README and documentation for stable release expectations.
+- Marked package classifier as beta/interim rather than production/stable.
+- Updated README and documentation to avoid claiming qicharts/qicharts2/NHS parity before external parity evidence exists.
+- Expanded CI configuration to cover Linux, Windows and macOS across Python 3.10, 3.11 and 3.12.
 
 ### Notes
 
-- Public APIs should avoid breaking changes from this release onward. Deprecations should be documented before removal.
+- Treat this as an interim v1.0 rebuild. It preserves the public API and strengthens validation scaffolding, but Anhøj parity, complete Nelson/Shewhart rule parity, cross-package qicharts/qicharts2 parity and NHS workbook parity are not marked complete.
 
 ## 0.9.0 - 2026-06-09
 

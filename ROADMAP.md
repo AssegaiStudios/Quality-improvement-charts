@@ -186,11 +186,11 @@ Support more advanced healthcare quality-improvement use cases.
 
 ---
 
-## v1.0.0 – Stable Release
+## v1.0.0 - Interim Parity-Readiness Release
 
 ### Planned Features
 
-- Stable public API
+- Supported public API
 - Comprehensive documentation
 - Full automated test coverage
 - Reference validation against published examples
@@ -199,7 +199,7 @@ Support more advanced healthcare quality-improvement use cases.
 
 ### Goal
 
-Production-ready release suitable for widespread adoption across healthcare, public sector, research, and industry.
+Create a clean, testable interim v1.0 base while full qicharts, qicharts2 and NHS parity evidence is completed. This should not be described as production-ready until `PARITY_REPORT.md` shows that all parity acceptance criteria have been satisfied.
 
 ---
 

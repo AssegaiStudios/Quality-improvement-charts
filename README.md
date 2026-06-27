@@ -6,19 +6,16 @@ pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI ch
 
 ## Version
 
-**1.0.0**
+**1.1.0 parity-readiness release**
 
-This is the first stable public release. The simple `qic(...)` interface remains the centre of the package, with table outputs available through `qic_table(...)`.
+This build is **not** a final parity-certified release. It advances the v1.0 interim package with Nelson Rules 1-8, a Shewhart-compatible rule helper, a shared signal schema, qicharts-style phase aliases, Power BI KPI/signal tables, and expanded validation/reporting tests.
+
+Do not treat qicharts/qicharts2/NHS parity as complete until the evidence in `PARITY_REPORT.md` says so.
 
 ## Install
 
 ```bash
 pip install pyqicharts
-```
-
-Optional reporting exports:
-
-```bash
 pip install pyqicharts[reporting]
 ```
 
@@ -27,6 +24,7 @@ Development:
 ```bash
 pip install -e .[dev]
 pytest
+pytest --cov=pyqicharts --cov-report=term-missing
 ```
 
 ## Quick Start
@@ -63,23 +61,20 @@ The same data is available from Python:
 from pyqicharts import sample_healthcare_qi_data, sample_subgroup_measurements
 ```
 
-## Supported Charts
+## Supported Chart Implementations
 
-| Chart Type | Status |
-|------------|--------|
-| Run chart | Supported |
-| Individuals / XmR chart | Supported |
-| Moving range chart | Supported |
-| C chart | Supported |
-| P chart | Supported |
-| U chart | Supported |
-| Xbar chart | Supported |
-| S chart | Supported |
-| G chart | Supported |
-| T chart | Supported |
-| P-prime chart | Supported |
-| U-prime chart | Supported |
-| Pareto chart | Supported |
+The current implementation supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime, U-prime and Pareto charts. Some methods are internally regression-tested but are **not yet externally parity-certified** against qicharts/qicharts2/NHS references.
+
+See `PARITY_REPORT.md` for current evidence and open gaps.
+
+## Validation
+
+Two validation areas are included:
+
+- `validation/`: legacy deterministic regression fixtures.
+- `validation_data/`: chart-by-chart validation inputs and expected outputs.
+
+These are internal regression fixtures, not complete external statistical parity evidence.
 
 ## Reporting
 
@@ -95,17 +90,21 @@ create_report_bundle([chart], "report")
 
 Excel and PowerPoint helpers require `pyqicharts[reporting]`.
 
-## Validation
+## Signal Rules
 
-The `validation/` folder contains deterministic datasets and expected outputs used by the test suite. These are regression fixtures and starter validation references. External clinical/statistical validation should still be performed before high-stakes operational use.
+```python
+from pyqicharts import nelson_rule_signals, shewhart_rule_signals, signal_table
 
-## Documentation
+nelson = nelson_rule_signals(values, centre=10, sigma=2)
+shewhart = shewhart_rule_signals(values, centre=10, sigma=2)
+signals = signal_table(chart)
+```
 
-See `docs/` for installation, quickstart, chart-family guides, reporting, Power BI, API reference and validation notes.
+`qic(...)` and `qic_table(...)` also accept `rules="nelson"`, `rules="shewhart"` and `rules="all"` for additive rule metadata.
 
 ## Compatibility
 
-From v1.0 onward, public APIs should avoid breaking changes. Deprecations should be documented before removal.
+The simple `qic(...)` interface remains central. Public APIs should avoid breaking changes; deprecations should be documented before removal.
 
 ## License
 
