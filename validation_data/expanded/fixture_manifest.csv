@@ -1,0 +1,14 @@
+chart,normal_example,process_change_example,edge_case_example
+run,healthcare_run.csv,industrial_run_process.csv,run_edge.csv
+i,healthcare_i.csv,industrial_i_process.csv,i_edge.csv
+mr,healthcare_mr.csv,industrial_mr_process.csv,mr_edge.csv
+c,healthcare_c.csv,industrial_c_process.csv,c_edge.csv
+p,healthcare_p.csv,industrial_p_process.csv,p_edge.csv
+u,healthcare_u.csv,industrial_u_process.csv,u_edge.csv
+xbar,healthcare_xbar.csv,industrial_xbar_process.csv,xbar_edge.csv
+s,healthcare_s.csv,industrial_s_process.csv,s_edge.csv
+g,healthcare_g.csv,industrial_g_process.csv,g_edge.csv
+t,healthcare_t.csv,industrial_t_process.csv,t_edge.csv
+p_prime,healthcare_p_prime.csv,industrial_p_prime_process.csv,p_prime_edge.csv
+u_prime,healthcare_u_prime.csv,industrial_u_prime_process.csv,u_prime_edge.csv
+pareto,healthcare_pareto.csv,industrial_pareto_process.csv,pareto_edge.csv

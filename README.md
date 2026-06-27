@@ -6,9 +6,9 @@ pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI ch
 
 ## Version
 
-**1.1.0 parity-readiness release**
+**1.2.0 specification-completion release**
 
-This build is **not** a final parity-certified release. It advances the v1.0 interim package with Nelson Rules 1-8, a Shewhart-compatible rule helper, a shared signal schema, qicharts-style phase aliases, Power BI KPI/signal tables, and expanded validation/reporting tests.
+This build implements the outstanding specification-based functionality without requiring a live R runtime. It includes deterministic Anhøj rules, bestbox/cutbox run-chart methods, segment-aware rule calculation, stronger process-change semantics, denominator-aware P-prime/U-prime charts, complete Power BI schemas and expanded validation/reporting tests.
 
 Do not treat qicharts/qicharts2/NHS parity as complete until the evidence in `PARITY_REPORT.md` says so.
 
@@ -100,7 +100,7 @@ shewhart = shewhart_rule_signals(values, centre=10, sigma=2)
 signals = signal_table(chart)
 ```
 
-`qic(...)` and `qic_table(...)` also accept `rules="nelson"`, `rules="shewhart"` and `rules="all"` for additive rule metadata.
+`qic(...)` and `qic_table(...)` also accept `rules="nelson"`, `rules="shewhart"` and `rules="all"` for additive rule metadata. Run charts accept `method="anhoej"`, `method="bestbox"` and `method="cutbox"`.
 
 ## Compatibility
 

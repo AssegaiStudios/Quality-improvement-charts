@@ -12,6 +12,8 @@ Supported `chart=` values include `run`, `i`, `mr`, `c`, `p`, `u`, `xbar`, `s`, 
 
 Common optional process arguments include `baseline_points`, `recalculation_points`, `target`, `interventions`, `step_changes`, `freeze_points`, `break_points`, `exclude_points`, `phases` and `rules`.
 
+v1.2 also accepts qicharts-style aliases: `baseline_end`, `freeze`, `breaks`, `exclude`, `recalculate_after`, `targets` and run-chart `method`.
+
 Signal rules:
 
 - `nelson_rule_signals(values, centre, sigma)`
@@ -32,5 +34,14 @@ Power BI:
 - `special_cause_summary_table(chart)`
 - `signal_table(chart)`
 - `kpi_table(chart)`
+- `nhs_interpretation_table(chart)`
+- `phase_metadata_table(chart)`
+- `intervention_metadata_table(chart)`
+- `target_metadata_table(chart)`
+
+Registries:
+
+- `CHART_ALIASES`
+- `VALID_CHARTS`
 
 Example and sample datasets are exposed from the package root, including `sample_healthcare_qi_data()` and `sample_subgroup_measurements()`.

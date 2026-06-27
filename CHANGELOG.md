@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.2.1 - 2026-06-09
+
+### Added
+
+- `STATISTICAL_REVIEW.md`.
+- `API_STABILITY.md`.
+- `docs/risk_adjusted_spc.md`.
+- `docs/rare_event_spc.md`.
+- Expanded validation fixture pack with normal, process-change and edge-case examples for every chart family.
+- Dedicated three-segment audit tests for supported chart families.
+
+### Changed
+
+- Bumped version to 1.2.1.
+- Made rare-event and risk-adjusted chart calculations segment-specific.
+
+### Notes
+
+- Release wording is now specification-complete qicharts2 parity implementation, without claiming live R byte-for-byte certification.
+
+## 1.2.0 - 2026-06-09
+
+### Added
+
+- Plain `pytest` source-path configuration.
+- Deterministic Anhøj run-chart implementation with exact crossing thresholds.
+- `method="anhoej"`, `method="bestbox"` and `method="cutbox"` support.
+- Segment-aware Nelson/Shewhart rule metadata using per-point centre and sigma values.
+- Segment-specific recalculation for MR, C, P and U charts.
+- Segment-aware Xbar and S chart calculations with subgroup-specific constants.
+- Denominator-aware P-prime and U-prime methodologies.
+- Power BI NHS interpretation, phase, intervention and target metadata tables.
+- `CHART_ALIASES` and `VALID_CHARTS` public registry constants.
+- `VALIDATION_REPORT.md` and consolidated release notes.
+
+### Changed
+
+- Bumped version to 1.2.0.
+- Excel export now writes signal, KPI, NHS interpretation, phase, intervention and target sheets.
+- Excluded observations are removed from supported chart calculations.
+
+### Notes
+
+- This release implements specification-based parity in Python. Live cross-package certification remains a separate artifact-driven validation task.
+
 ## 1.1.0 - 2026-06-09
 
 ### Added

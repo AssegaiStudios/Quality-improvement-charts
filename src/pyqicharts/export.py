@@ -49,7 +49,16 @@ def export_excel(chart, path: str | Path, include_image: bool = True) -> Path:
     except ImportError as exc:
         raise _missing_optional("openpyxl") from exc
 
-    from .powerbi import kpi_table, signal_table, special_cause_summary_table, spc_summary_table
+    from .powerbi import (
+        intervention_metadata_table,
+        kpi_table,
+        nhs_interpretation_table,
+        phase_metadata_table,
+        signal_table,
+        special_cause_summary_table,
+        spc_summary_table,
+        target_metadata_table,
+    )
 
     charts = _as_chart_list(chart)
     output = Path(path)
@@ -78,6 +87,22 @@ def export_excel(chart, path: str | Path, include_image: bool = True) -> Path:
         kpi_sheet = workbook.create_sheet(f"KPI summary{suffix}")
         for row in dataframe_to_rows(kpi_table(chart_item), index=False, header=True):
             kpi_sheet.append(row)
+
+        interpretation_sheet = workbook.create_sheet(f"NHS interpretation{suffix}")
+        for row in dataframe_to_rows(nhs_interpretation_table(chart_item), index=False, header=True):
+            interpretation_sheet.append(row)
+
+        phase_sheet = workbook.create_sheet(f"Phase metadata{suffix}")
+        for row in dataframe_to_rows(phase_metadata_table(chart_item), index=False, header=True):
+            phase_sheet.append(row)
+
+        intervention_sheet = workbook.create_sheet(f"Interventions{suffix}")
+        for row in dataframe_to_rows(intervention_metadata_table(chart_item), index=False, header=True):
+            intervention_sheet.append(row)
+
+        target_sheet = workbook.create_sheet(f"Targets{suffix}")
+        for row in dataframe_to_rows(target_metadata_table(chart_item), index=False, header=True):
+            target_sheet.append(row)
 
     if include_image:
         for index, chart_item in enumerate(charts, start=1):

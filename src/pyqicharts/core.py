@@ -80,10 +80,18 @@ def qic(
     exclude_points: list | None = None,
     phases: list[dict] | None = None,
     rules: str | None = None,
+    method: str = "anhoej",
+    baseline_start=None,
+    baseline_end=None,
+    freeze: list | None = None,
+    breaks: list | None = None,
+    exclude: list | None = None,
+    recalculate_after: list | None = None,
+    targets=None,
 ) -> QicResult:
     """Create a QI/SPC chart.
 
-    Version 1.1.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
+    Version 1.2.0 supports run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime charts. P and U charts
     require a denominator column. Individuals charts include NHS-style
     special cause colouring and interpretation, plus baseline, recalculation,
     target, intervention and step-change metadata.
@@ -109,6 +117,14 @@ def qic(
         exclude_points=exclude_points,
         phases=phases,
         rules=rules,
+        method=method,
+        baseline_start=baseline_start,
+        baseline_end=baseline_end,
+        freeze=freeze,
+        breaks=breaks,
+        exclude=exclude,
+        recalculate_after=recalculate_after,
+        targets=targets,
     )
     fig, ax = plt.subplots(figsize=figsize)
     ylabel = y

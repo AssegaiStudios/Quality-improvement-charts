@@ -80,56 +80,64 @@ def nelson_rule_signals(values, centre: float, sigma: float, chart_type: str = "
     """Detect Nelson Rules 1-8 and return a stable-schema DataFrame."""
 
     series = pd.Series(values, dtype="float64").reset_index(drop=True)
-    if not len(series) or sigma is None or not np.isfinite(sigma) or sigma <= 0:
+    centre_series = pd.Series(centre, index=series.index, dtype="float64") if np.isscalar(centre) else pd.Series(centre, dtype="float64").reset_index(drop=True)
+    sigma_series = pd.Series(sigma, index=series.index, dtype="float64") if np.isscalar(sigma) else pd.Series(sigma, dtype="float64").reset_index(drop=True)
+    x_series = pd.Series(range(1, len(series) + 1)) if x_values is None else pd.Series(list(x_values)).reset_index(drop=True)
+    frame = pd.DataFrame({"value": series, "centre": centre_series, "sigma": sigma_series, "x": x_series})
+    frame = frame.dropna(subset=["value", "centre", "sigma"])
+    frame = frame[frame["sigma"] > 0].reset_index(drop=True)
+    if frame.empty:
         return signals_to_frame([])
 
-    z = ((series - centre) / sigma).to_numpy()
+    series = frame["value"]
+    z = ((frame["value"] - frame["centre"]) / frame["sigma"]).to_numpy()
+    local_x = frame["x"].tolist()
     signals: list[Signal] = []
 
     for i, value in enumerate(z):
         if abs(value) > 3:
-            signals.append(_signal(chart_type, "nelson", "N1", NELSON_RULE_NAMES["N1"], "high" if value > 0 else "low", "critical", i, i, x_values))
+            signals.append(_signal(chart_type, "nelson", "N1", NELSON_RULE_NAMES["N1"], "high" if value > 0 else "low", "critical", i, i, local_x))
 
     for i in range(0, len(z) - 8):
         window = z[i : i + 9]
         if np.all(window > 0) or np.all(window < 0):
-            signals.append(_signal(chart_type, "nelson", "N2", NELSON_RULE_NAMES["N2"], _window_direction(window), "warning", i, i + 8, x_values))
+            signals.append(_signal(chart_type, "nelson", "N2", NELSON_RULE_NAMES["N2"], _window_direction(window), "warning", i, i + 8, local_x))
 
     diffs = np.diff(series.to_numpy())
     for i in range(0, len(diffs) - 4):
         window = diffs[i : i + 5]
         if np.all(window > 0) or np.all(window < 0):
-            signals.append(_signal(chart_type, "nelson", "N3", NELSON_RULE_NAMES["N3"], "high" if np.all(window > 0) else "low", "warning", i, i + 5, x_values))
+            signals.append(_signal(chart_type, "nelson", "N3", NELSON_RULE_NAMES["N3"], "high" if np.all(window > 0) else "low", "warning", i, i + 5, local_x))
 
     signs = np.sign(diffs)
     for i in range(0, len(signs) - 12):
         window = signs[i : i + 13]
         if not np.any(window == 0) and np.all(window[:-1] != window[1:]):
-            signals.append(_signal(chart_type, "nelson", "N4", NELSON_RULE_NAMES["N4"], "alternating", "warning", i, i + 13, x_values))
+            signals.append(_signal(chart_type, "nelson", "N4", NELSON_RULE_NAMES["N4"], "alternating", "warning", i, i + 13, local_x))
 
     for i in range(0, len(z) - 2):
         window = z[i : i + 3]
         high = np.sum(window > 2)
         low = np.sum(window < -2)
         if high >= 2 or low >= 2:
-            signals.append(_signal(chart_type, "nelson", "N5", NELSON_RULE_NAMES["N5"], "high" if high >= 2 else "low", "warning", i, i + 2, x_values))
+            signals.append(_signal(chart_type, "nelson", "N5", NELSON_RULE_NAMES["N5"], "high" if high >= 2 else "low", "warning", i, i + 2, local_x))
 
     for i in range(0, len(z) - 4):
         window = z[i : i + 5]
         high = np.sum(window > 1)
         low = np.sum(window < -1)
         if high >= 4 or low >= 4:
-            signals.append(_signal(chart_type, "nelson", "N6", NELSON_RULE_NAMES["N6"], "high" if high >= 4 else "low", "warning", i, i + 4, x_values))
+            signals.append(_signal(chart_type, "nelson", "N6", NELSON_RULE_NAMES["N6"], "high" if high >= 4 else "low", "warning", i, i + 4, local_x))
 
     for i in range(0, len(z) - 14):
         window = z[i : i + 15]
         if np.all(np.abs(window) < 1):
-            signals.append(_signal(chart_type, "nelson", "N7", NELSON_RULE_NAMES["N7"], "near-centre", "information", i, i + 14, x_values))
+            signals.append(_signal(chart_type, "nelson", "N7", NELSON_RULE_NAMES["N7"], "near-centre", "information", i, i + 14, local_x))
 
     for i in range(0, len(z) - 7):
         window = z[i : i + 8]
         if np.all(np.abs(window) > 1) and np.any(window > 0) and np.any(window < 0):
-            signals.append(_signal(chart_type, "nelson", "N8", NELSON_RULE_NAMES["N8"], "mixed", "warning", i, i + 7, x_values))
+            signals.append(_signal(chart_type, "nelson", "N8", NELSON_RULE_NAMES["N8"], "mixed", "warning", i, i + 7, local_x))
 
     return signals_to_frame(signals).drop_duplicates().reset_index(drop=True)
 

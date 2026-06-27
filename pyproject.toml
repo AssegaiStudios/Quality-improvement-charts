@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqicharts"
-version = "1.1.0"
+version = "1.2.1"
 description = "Quality Improvement and Statistical Process Control charts for Python"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -35,6 +35,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+pythonpath = ["src"]
 
 [tool.coverage.run]
 source = ["pyqicharts"]
