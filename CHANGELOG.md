@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 - 2026-06-10
+
+### Added
+
+- Added pyqicharts Excel Companion Phase 1 and Phase 2 using xlwings.
+- Added workbook templates, Excel setup docs, user guide, troubleshooting guide and completion report.
+- Added `[excel]` optional dependency group and `pyqicharts-excel-init` command.
+- Added tests for Excel config parsing, workbook I/O, runner workflow, output tables and friendly error logging.
+
 ## 1.2.1 - 2026-06-09
 
 ### Added

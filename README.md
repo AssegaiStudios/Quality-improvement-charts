@@ -6,7 +6,7 @@ pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI ch
 
 ## Version
 
-**1.2.0 specification-completion release**
+**1.3.0 Excel Companion release**
 
 This build implements the outstanding specification-based functionality without requiring a live R runtime. It includes deterministic Anhøj rules, bestbox/cutbox run-chart methods, segment-aware rule calculation, stronger process-change semantics, denominator-aware P-prime/U-prime charts, complete Power BI schemas and expanded validation/reporting tests.
 
@@ -17,6 +17,7 @@ Do not treat qicharts/qicharts2/NHS parity as complete until the evidence in `PA
 ```bash
 pip install pyqicharts
 pip install pyqicharts[reporting]
+pip install pyqicharts[excel]
 ```
 
 Development:
@@ -89,6 +90,16 @@ create_report_bundle([chart], "report")
 ```
 
 Excel and PowerPoint helpers require `pyqicharts[reporting]`.
+
+## Excel Companion
+
+The Excel Companion lets workbook users run pyqicharts through xlwings without writing Python code. Templates are included in `excel/`, and setup guidance is in `docs/excel_setup.md`.
+
+```bash
+pip install pyqicharts[excel]
+xlwings addin install
+pyqicharts-excel-init
+```
 
 ## Signal Rules
 

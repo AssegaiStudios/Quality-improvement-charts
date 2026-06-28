@@ -1,5 +1,9 @@
 # pyqicharts Release Notes
 
+## v1.3.0
+
+v1.3.0 adds the pyqicharts Excel Companion: xlwings runner functions, workbook templates, optional `[excel]` dependencies, export workflow support and Excel-focused documentation.
+
 ## v1.2.0
 
 v1.2.0 is the specification-completion release. It adds deterministic Anhøj run-chart rules, bestbox/cutbox methods, segment-aware Nelson and Shewhart metadata, stronger process-change semantics, denominator-aware risk-adjusted charts, complete Power BI schemas and expanded export validation.
