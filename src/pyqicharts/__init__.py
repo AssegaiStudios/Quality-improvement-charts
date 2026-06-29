@@ -38,4 +38,4 @@ __all__ = [
     "phase_metadata_table", "read_validation_csv", "signal_table", "signals_to_frame", "special_cause_summary_table", "spc_summary_table",
     "target_metadata_table", "SIGNAL_SCHEMA_VERSION", "Signal",
 ]
-__version__ = "1.3.1"
+__version__ = "1.3.2"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqicharts"
-version = "1.3.1"
+version = "1.3.2"
 description = "Quality Improvement and Statistical Process Control charts for Python"
 readme = "README.md"
 requires-python = ">=3.9"

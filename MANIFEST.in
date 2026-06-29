@@ -14,6 +14,7 @@ recursive-include validation *.md *.csv
 recursive-include validation_data *.md *.csv
 recursive-include sample_data *.csv
 recursive-include excel *.md *.xlsx *.xlsm
+recursive-include dist pyqicharts-*.whl pyqicharts-*.tar.gz
 recursive-include .github *.yml
 global-exclude __pycache__
 global-exclude *.py[cod]

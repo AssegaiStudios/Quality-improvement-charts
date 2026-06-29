@@ -1,6 +1,6 @@
 # pyqicharts API Stability
 
-Status: v1.2.1.
+Status: v1.3.2.
 
 ## Stable Public APIs
 
@@ -44,7 +44,7 @@ Chart aliases are documented in `CHART_ALIASES`. The backwards-compatible `paret
 
 ## Deprecated APIs
 
-No public API is deprecated in v1.2.1.
+No public API is deprecated in v1.3.2.
 
 ## Planned Removals
 

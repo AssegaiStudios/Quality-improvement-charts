@@ -141,6 +141,41 @@ def _segment_source(values: pd.Series, segment_index: pd.Index, baseline_points:
     return segment_values
 
 
+def _clear_excluded_signal_fields(out: pd.DataFrame) -> pd.DataFrame:
+    """Remove all chart-level signal text from rows marked as excluded.
+
+    Excluded observations are still retained in output tables so users can see
+    what was omitted from calculations, but they must not look like detected
+    special causes. Clearing the text fields as well as the Boolean flags keeps
+    Excel, Power BI and report exports consistent across every chart family.
+    """
+
+    if "excluded" not in out:
+        return out
+    mask = out["excluded"].fillna(False).astype(bool)
+    if not mask.any():
+        return out
+
+    false_columns = [column for column in ["signal", "special_cause"] if column in out]
+    text_columns = [
+        column
+        for column in [
+            "signal_rule",
+            "special_cause_rule",
+            "special_cause_direction",
+            "special_cause_type",
+            "special_cause_colour",
+            "special_cause_label",
+        ]
+        if column in out
+    ]
+    if false_columns:
+        out.loc[mask, false_columns] = False
+    if text_columns:
+        out.loc[mask, text_columns] = ""
+    return out
+
+
 def _normalise_rules(rules: str | None) -> str | None:
     """Normalise configurable rule-set names."""
 
@@ -288,10 +323,7 @@ def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFram
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
     out["sigma"] = np.nan
-    if "excluded" in out:
-        out.loc[out["excluded"], ["signal", "special_cause"]] = False
-        out.loc[out["excluded"], ["signal_rule", "special_cause_rule", "special_cause_direction", "special_cause_type", "special_cause_colour", "special_cause_label"]] = ""
-    return out
+    return _clear_excluded_signal_fields(out)
 
 
 def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: str, denominator: str | None = None) -> pd.DataFrame:
@@ -354,10 +386,7 @@ def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: s
     out["special_cause_type"] = np.where(out["signal"], "neutral", "")
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
-    if "excluded" in out:
-        out.loc[out["excluded"], ["signal", "special_cause"]] = False
-        out.loc[out["excluded"], ["signal_rule", "special_cause_rule", "special_cause_direction", "special_cause_type", "special_cause_colour", "special_cause_label"]] = ""
-    return out
+    return _clear_excluded_signal_fields(out)
 
 
 def _c4(n: float) -> float:
@@ -429,8 +458,7 @@ def _xbar_s_fields(
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
     out["signal_count"] = out["signal"].astype(int)
     out["rule_set"] = ""
-    out.loc[out["excluded"], ["signal", "special_cause"]] = False
-    return out
+    return _clear_excluded_signal_fields(out)
 
 def qic_table(
     data: pd.DataFrame,
@@ -537,7 +565,7 @@ def qic_table(
         nhs = nhs_xmr_signals(values, out["centre"], out["lcl"], out["ucl"], improvement, NhsRuleConfig(shift_points, trend_points))
         out["signal"] = nhs["special_cause"].astype(bool); out["signal_rule"] = nhs["special_cause_rule"]
         out = pd.concat([out, nhs], axis=1)
-        out.loc[out["excluded"], ["signal", "special_cause"]] = False
+        out = _clear_excluded_signal_fields(out)
         return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key in {"g", "t"}:
         return _add_rule_metadata(_rare_event_fields(out, y, chart_key), x, chart_key, rule_set)
@@ -559,7 +587,7 @@ def qic_table(
             out.loc[group.index, "signal_rule"] = np.where(signal, "MR above UCL", "")
             out.loc[group.index, "mrbar"] = mrbar
             out.loc[group.index, "sigma"] = mrbar / 1.128 if mrbar == mrbar else np.nan
-        out.loc[out["excluded"], ["signal"]] = False
+        out = _clear_excluded_signal_fields(out)
         return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key == "c":
         counts = out[y].astype(float)
@@ -572,7 +600,7 @@ def qic_table(
             signal = ((counts.loc[group.index] < lcl) | (counts.loc[group.index] > ucl)).fillna(False) if sqrt_c == sqrt_c else pd.Series(False, index=group.index)
             out.loc[group.index, "centre"] = centre; out.loc[group.index, "lcl"] = lcl; out.loc[group.index, "ucl"] = ucl
             out.loc[group.index, "signal"] = signal.astype(bool); out.loc[group.index, "signal_rule"] = np.where(signal, "Outside C chart limits", ""); out.loc[group.index, "sigma"] = sqrt_c
-        out.loc[out["excluded"], ["signal"]] = False
+        out = _clear_excluded_signal_fields(out)
         return _add_rule_metadata(out, x, chart_key, rule_set)
     if chart_key == "p":
         events = out[y].astype(float); denom = out[denominator].astype(float); proportion = events / denom
@@ -584,7 +612,7 @@ def qic_table(
             se = np.sqrt(pbar*(1-pbar)/denom.loc[group.index]) if pbar == pbar else np.nan; lcl = np.maximum(0, pbar - 3*se); ucl = np.minimum(1, pbar + 3*se); signal = (proportion.loc[group.index] < lcl) | (proportion.loc[group.index] > ucl)
             out.loc[group.index, "centre"] = pbar; out.loc[group.index, "lcl"] = lcl; out.loc[group.index, "ucl"] = ucl
             out.loc[group.index, "signal"] = signal.astype(bool); out.loc[group.index, "signal_rule"] = np.where(signal, "Outside P chart limits", ""); out.loc[group.index, "sigma"] = se
-        out.loc[out["excluded"], ["signal"]] = False
+        out = _clear_excluded_signal_fields(out)
         return _add_rule_metadata(out, x, chart_key, rule_set)
     events = out[y].astype(float); denom = out[denominator].astype(float); rate = events / denom
     out["plot_value"] = rate; out["centre"] = np.nan; out["centre_label"] = "Mean rate"; out["lcl"] = np.nan; out["ucl"] = np.nan
@@ -595,7 +623,7 @@ def qic_table(
         se = np.sqrt(ubar/denom.loc[group.index]) if ubar == ubar else np.nan; lcl = np.maximum(0, ubar - 3*se); ucl = ubar + 3*se; signal = (rate.loc[group.index] < lcl) | (rate.loc[group.index] > ucl)
         out.loc[group.index, "centre"] = ubar; out.loc[group.index, "lcl"] = lcl; out.loc[group.index, "ucl"] = ucl
         out.loc[group.index, "signal"] = signal.astype(bool); out.loc[group.index, "signal_rule"] = np.where(signal, "Outside U chart limits", ""); out.loc[group.index, "sigma"] = se
-    out.loc[out["excluded"], ["signal"]] = False
+    out = _clear_excluded_signal_fields(out)
     return _add_rule_metadata(out, x, chart_key, rule_set)
 
 def pareto_table(data: pd.DataFrame, category: str, count: str | None = None) -> pd.DataFrame:

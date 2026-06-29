@@ -82,3 +82,29 @@ def test_excluded_points_suppress_risk_adjusted_signals():
         assert not bool(row["signal"])
         assert not bool(row["special_cause"])
         assert row["special_cause_rule"] == ""
+
+
+@pytest.mark.parametrize(
+    "chart_type,frame,kwargs,excluded_x",
+    [
+        ("mr", pd.DataFrame({"x": range(1, 8), "y": [10, 10, 10, 100, 10, 10, 10]}), {}, 4),
+        ("c", pd.DataFrame({"x": range(1, 8), "y": [2, 2, 2, 50, 2, 2, 2]}), {}, 4),
+        ("p", pd.DataFrame({"x": range(1, 8), "y": [2, 2, 2, 80, 2, 2, 2], "n": [100] * 7}), {"denominator": "n"}, 4),
+        ("u", pd.DataFrame({"x": range(1, 8), "y": [2, 2, 2, 80, 2, 2, 2], "n": [100] * 7}), {"denominator": "n"}, 4),
+        ("xbar", pd.DataFrame({"x": [1,1,2,2,3,3,4,4], "y": [10,11,10,11,100,101,10,11]}), {}, 3),
+        ("s", pd.DataFrame({"x": [1,1,2,2,3,3,4,4], "y": [10,11,10,11,50,150,10,11]}), {}, 3),
+    ],
+)
+def test_excluded_rows_clear_signal_rule_text_for_limit_charts(chart_type, frame, kwargs, excluded_x):
+    # The excluded point/subgroup is intentionally extreme. Without the final
+    # cleanup step it would keep a non-empty signal_rule even though signal is
+    # masked to False, which is misleading in exported tables.
+    out = qic_table(frame, "x", "y", chart=chart_type, exclude_points=[excluded_x], **kwargs)
+    row = out.loc[out["x"] == excluded_x].iloc[0]
+    assert bool(row["excluded"])
+    assert not bool(row["signal"])
+    assert row["signal_rule"] == ""
+    if "special_cause" in out.columns:
+        assert not bool(row["special_cause"])
+    if "special_cause_rule" in out.columns:
+        assert row["special_cause_rule"] == ""

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.2 - 2026-06-10
+
+### Fixed
+
+- Clear `signal_rule` and special-cause text metadata for excluded MR, C, P, U, Xbar and S rows.
+- Updated stale validation and API stability documentation.
+
+### Added
+
+- Regression tests for excluded signal-rule clearance across MR, C, P, U, Xbar and S charts.
+- `dist/` release artifacts declaration in `MANIFEST.in`.
+- v1.3.2 release notes.
+
 ## 1.3.1 - 2026-06-10
 
 ### Fixed

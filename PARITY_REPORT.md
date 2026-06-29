@@ -17,6 +17,7 @@ v1.2.1 completes the final evidence-hardening pass requested for pyqicharts. The
 | P-prime/U-prime | P-prime uses risk-adjusted proportion logic when denominator is supplied. U-prime uses risk-adjusted rate/opportunity logic. Fallback O/E mode is labelled clearly. |
 | G/T rare-event charts | Zero, missing, single-observation, repeated, extreme and invalid-negative cases are tested. |
 | Process changes | `baseline_points`, `baseline_end`, `freeze`, `freeze_points`, `breaks`, `break_points`, `exclude`, `exclude_points`, `recalculate_after`, phases, interventions, step changes and targets are accepted additively. Excluded observations are removed from calculations. |
+| Excluded signal cleanup | Excluded rows are retained for auditability but have chart-level `signal`, `special_cause`, `signal_rule` and special-cause text fields cleared across supported chart families. |
 | MR/C/P/U recalculation | MR, C, P and U charts now calculate segment-specific centre lines and limits with exclusions. |
 | NHS interpretation | `nhs_interpretation_table(...)` provides export-ready plain-English interpretation rows. Direction-aware XmR classification remains supported. |
 | Pareto | `pareto_table(...)`, `pareto_chart(...)` and `paretochart(...)` remain implemented and tested. |

@@ -1,5 +1,9 @@
 # pyqicharts Release Notes
 
+## v1.3.2
+
+v1.3.2 clears signal-rule text for excluded MR, C, P, U, Xbar and S rows, updates stale validation/API stability documentation, declares release artifacts in `MANIFEST.in`, and adds focused regression coverage.
+
 ## v1.3.1
 
 v1.3.1 fixes excluded-row masking for rare-event and risk-adjusted signal outputs, adds regression tests, adds deterministic expected outputs for expanded fixtures, documents `nhs_interpretation_table(chart)`, and includes built wheel/source artifacts in the downloadable bundle.
