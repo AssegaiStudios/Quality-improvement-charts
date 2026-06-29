@@ -1,0 +1,7 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,special_cause,signal_rule,special_cause_rule
+xbar,1,1,54.083333,51.263377,56.90329,10.5,True,True,Outside XBAR chart limits,Outside XBAR chart limits
+xbar,2,1,54.083333,51.263377,56.90329,11.0,True,True,Outside XBAR chart limits,Outside XBAR chart limits
+xbar,3,1,54.083333,51.263377,56.90329,50.5,True,True,Outside XBAR chart limits,Outside XBAR chart limits
+xbar,4,1,54.083333,51.263377,56.90329,51.0,True,True,Outside XBAR chart limits,Outside XBAR chart limits
+xbar,5,1,54.083333,51.263377,56.90329,100.5,True,True,Outside XBAR chart limits,Outside XBAR chart limits
+xbar,6,1,54.083333,51.263377,56.90329,101.0,True,True,Outside XBAR chart limits,Outside XBAR chart limits

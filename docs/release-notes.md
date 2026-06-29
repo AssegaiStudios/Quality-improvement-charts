@@ -1,5 +1,9 @@
 # pyqicharts Release Notes
 
+## v1.3.1
+
+v1.3.1 fixes excluded-row masking for rare-event and risk-adjusted signal outputs, adds regression tests, adds deterministic expected outputs for expanded fixtures, documents `nhs_interpretation_table(chart)`, and includes built wheel/source artifacts in the downloadable bundle.
+
 ## v1.3.0
 
 v1.3.0 adds the pyqicharts Excel Companion: xlwings runner functions, workbook templates, optional `[excel]` dependencies, export workflow support and Excel-focused documentation.

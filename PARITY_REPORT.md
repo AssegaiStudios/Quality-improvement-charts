@@ -25,8 +25,8 @@ v1.2.1 completes the final evidence-hardening pass requested for pyqicharts. The
 | Public API | `qic()`, `qic_table()`, `pareto_chart()` and `pareto_table()` are preferred; aliases are preserved. `CHART_ALIASES` and `VALID_CHARTS` are public. |
 | Statistical review | `STATISTICAL_REVIEW.md` documents formulae, references, implementation notes and known deviations. |
 | API stability | `API_STABILITY.md` lists stable APIs, aliases, deprecated APIs and planned removals. |
-| Expanded validation data | `validation_data/expanded/` contains normal, process-change and edge-case fixture files for every chart family. |
+| Expanded validation data | `validation_data/expanded/` contains normal, process-change and edge-case fixture files for every chart family. `validation_data/expanded_expected_outputs/` contains deterministic expected outputs that are recalculated in tests. |
 
 ## Remaining External Certification Work
 
-This release may be described as a specification-complete qicharts2 parity implementation. It does not claim byte-for-byte live R package equivalence. That would require bundling reference outputs from qicharts/qicharts2/NHS workbooks and comparing generated outputs against those artifacts.
+This release may be described as a specification-complete qicharts2 parity implementation. It does not claim byte-for-byte live R package equivalence or external published-reference-output certification. That would require bundling reference outputs from qicharts/qicharts2/NHS workbooks or published worked examples and comparing generated outputs against those artifacts.

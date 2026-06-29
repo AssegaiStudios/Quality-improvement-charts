@@ -1,0 +1,10 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,signal_rule
+p,1,1,0.21,0.087808,0.332192,0.02,True,Outside P chart limits
+p,2,1,0.21,0.087808,0.332192,0.03,True,Outside P chart limits
+p,3,1,0.21,0.087808,0.332192,0.02,True,Outside P chart limits
+p,4,1,0.21,0.087808,0.332192,0.2,False,
+p,5,1,0.21,0.087808,0.332192,0.21,False,
+p,6,1,0.21,0.087808,0.332192,0.2,False,
+p,7,1,0.21,0.087808,0.332192,0.4,True,Outside P chart limits
+p,8,1,0.21,0.087808,0.332192,0.41,True,Outside P chart limits
+p,9,1,0.21,0.087808,0.332192,0.4,True,Outside P chart limits

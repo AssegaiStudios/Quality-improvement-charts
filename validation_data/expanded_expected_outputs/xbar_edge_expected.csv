@@ -1,0 +1,4 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,special_cause,signal_rule,special_cause_rule
+xbar,1,1,10.0,10.0,10.0,10.0,False,False,,
+xbar,2,1,10.0,10.0,10.0,10.0,False,False,,
+xbar,3,1,10.0,10.0,10.0,10.0,False,False,,

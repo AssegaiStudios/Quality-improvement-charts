@@ -288,6 +288,9 @@ def _rare_event_fields(out: pd.DataFrame, y: str, chart_key: str) -> pd.DataFram
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
     out["sigma"] = np.nan
+    if "excluded" in out:
+        out.loc[out["excluded"], ["signal", "special_cause"]] = False
+        out.loc[out["excluded"], ["signal_rule", "special_cause_rule", "special_cause_direction", "special_cause_type", "special_cause_colour", "special_cause_label"]] = ""
     return out
 
 
@@ -351,6 +354,9 @@ def _risk_adjusted_fields(out: pd.DataFrame, y: str, expected: str, chart_key: s
     out["special_cause_type"] = np.where(out["signal"], "neutral", "")
     out["special_cause_colour"] = np.where(out["signal"], "#768692", "")
     out["special_cause_label"] = np.where(out["signal"], out["special_cause_rule"], "")
+    if "excluded" in out:
+        out.loc[out["excluded"], ["signal", "special_cause"]] = False
+        out.loc[out["excluded"], ["signal_rule", "special_cause_rule", "special_cause_direction", "special_cause_type", "special_cause_colour", "special_cause_label"]] = ""
     return out
 
 

@@ -1,0 +1,5 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,special_cause,signal_rule,special_cause_rule
+i,1,1,257.5,-1495.159574,2010.159574,10.0,False,False,,
+i,2,1,257.5,-1495.159574,2010.159574,10.0,False,False,,
+i,3,1,257.5,-1495.159574,2010.159574,999.0,False,False,,
+i,4,1,257.5,-1495.159574,2010.159574,11.0,False,False,,

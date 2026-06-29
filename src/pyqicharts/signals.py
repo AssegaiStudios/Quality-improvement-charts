@@ -7,7 +7,7 @@ from typing import Iterable
 import pandas as pd
 
 
-SIGNAL_SCHEMA_VERSION = "1.3.0"
+SIGNAL_SCHEMA_VERSION = "1.3.1"
 
 
 @dataclass(frozen=True)

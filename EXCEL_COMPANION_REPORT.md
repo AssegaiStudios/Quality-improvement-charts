@@ -1,5 +1,7 @@
 # pyqicharts Excel Companion Phase 1 and Phase 2 Report
 
+Reviewer-fix status: v1.3.1 adds excluded-signal regression tests, deterministic expanded-fixture expected outputs, `nhs_interpretation_table(chart)` documentation and built distribution artifacts in the downloadable bundle.
+
 ## Implemented Features
 
 - Added `pyqicharts_excel` package with config parsing, workbook I/O, validation, output table generation, xlwings runner functions, ribbon guidance and examples.
@@ -38,4 +40,3 @@ Automated tests exercise the workbook run-chart path. Existing pyqicharts tests 
 ## Future Phase 3 Recommendation
 
 Build a governed Office.js add-in or signed enterprise ribbon package once the xlwings workflow has been piloted with real improvement teams.
-

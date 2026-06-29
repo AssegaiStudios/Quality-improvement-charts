@@ -18,4 +18,6 @@
 
 ## Known Limitations
 
-Live cross-package certification against qicharts/qicharts2/NHS workbook outputs is not included because the request explicitly excluded a live R execution environment. Reference-output files can be added later without changing the public API.
+Expanded validation fixtures now include deterministic expected-output files in `validation_data/expanded_expected_outputs/`, and tests recalculate each fixture before comparing outputs. These files improve regression evidence for every normal, process-change and edge-case fixture.
+
+Live cross-package certification against qicharts/qicharts2/NHS workbook outputs is not included because the request explicitly excluded a live R execution environment. Published-reference validation artifacts remain a separate evidence task: the current deterministic expected outputs are not presented as externally published reference outputs.

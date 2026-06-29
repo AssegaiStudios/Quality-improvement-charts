@@ -39,6 +39,8 @@ Power BI:
 - `intervention_metadata_table(chart)`
 - `target_metadata_table(chart)`
 
+See `docs/nhs_interpretation_table.md` for a worked example and output schema.
+
 Registries:
 
 - `CHART_ALIASES`

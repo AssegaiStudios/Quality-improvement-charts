@@ -1,0 +1,4 @@
+category,count,percent,cumulative_count,cumulative_percent
+Delay,3,60.0,3,60.0
+Medication,1,20.0,4,80.0
+Fall,1,20.0,5,100.0

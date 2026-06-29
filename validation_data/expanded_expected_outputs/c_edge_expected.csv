@@ -1,0 +1,4 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,signal_rule
+c,1,1,17.0,4.630683,29.369317,0.0,True,Outside C chart limits
+c,2,1,17.0,4.630683,29.369317,1.0,True,Outside C chart limits
+c,3,1,17.0,4.630683,29.369317,50.0,True,Outside C chart limits

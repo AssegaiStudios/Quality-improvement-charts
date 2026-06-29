@@ -1,0 +1,10 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,signal_rule
+mr,1,1,12.0,0.0,39.204,,False,
+mr,2,1,12.0,0.0,39.204,1.0,False,
+mr,3,1,12.0,0.0,39.204,1.0,False,
+mr,4,1,12.0,0.0,39.204,40.0,True,MR above UCL
+mr,5,1,12.0,0.0,39.204,1.0,False,
+mr,6,1,12.0,0.0,39.204,1.0,False,
+mr,7,1,12.0,0.0,39.204,50.0,True,MR above UCL
+mr,8,1,12.0,0.0,39.204,1.0,False,
+mr,9,1,12.0,0.0,39.204,1.0,False,

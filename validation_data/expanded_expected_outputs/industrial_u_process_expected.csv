@@ -1,0 +1,10 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,signal_rule
+u,1,1,0.42,0.145045,0.694955,0.04,True,Outside U chart limits
+u,2,1,0.42,0.145045,0.694955,0.06,True,Outside U chart limits
+u,3,1,0.42,0.145045,0.694955,0.04,True,Outside U chart limits
+u,4,1,0.42,0.145045,0.694955,0.4,False,
+u,5,1,0.42,0.145045,0.694955,0.42,False,
+u,6,1,0.42,0.145045,0.694955,0.4,False,
+u,7,1,0.42,0.145045,0.694955,0.8,True,Outside U chart limits
+u,8,1,0.42,0.145045,0.694955,0.82,True,Outside U chart limits
+u,9,1,0.42,0.145045,0.694955,0.8,True,Outside U chart limits

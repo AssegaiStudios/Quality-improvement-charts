@@ -1,0 +1,4 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,special_cause,signal_rule,special_cause_rule
+u_prime,1,1,0.012,,,,False,False,,
+u_prime,2,1,0.012,0.0,0.092498,0.06,False,False,,
+u_prime,3,1,0.012,0.0,0.037456,0.012,False,False,,

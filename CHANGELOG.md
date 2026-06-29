@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.1 - 2026-06-10
+
+### Fixed
+
+- Mask excluded G, T, P-prime and U-prime rows out of `signal` and `special_cause` outputs.
+
+### Added
+
+- Regression tests for excluded rare-event and risk-adjusted signals.
+- Deterministic expected-output files and comparison tests for expanded validation fixtures.
+- Worked `nhs_interpretation_table(chart)` documentation.
+- Built distribution artifacts included in the downloadable release bundle.
+
 ## 1.3.0 - 2026-06-10
 
 ### Added

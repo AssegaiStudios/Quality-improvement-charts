@@ -4,6 +4,7 @@ include PARITY_REPORT.md
 include VALIDATION_REPORT.md
 include STATISTICAL_REVIEW.md
 include API_STABILITY.md
+include EXCEL_COMPANION_REPORT.md
 include ROADMAP.md
 include LICENSE
 recursive-include docs *.md

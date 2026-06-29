@@ -1,0 +1,4 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,special_cause,signal_rule,special_cause_rule
+s,1,1,0.942809,0.0,3.079716,0.707107,False,False,,
+s,2,1,0.942809,0.0,3.079716,1.414214,False,False,,
+s,3,1,0.942809,0.0,3.079716,0.707107,False,False,,

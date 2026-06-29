@@ -1,0 +1,3 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,signal_rule
+u,1,1,0.016667,0.0,0.139141,0.0,False,
+u,2,1,0.016667,0.0,0.071439,0.02,False,

@@ -27,3 +27,5 @@ targets = target_metadata_table(chart)
 ```
 
 The v1.2 schemas include `schema_version`, `chart_id` and `chart_type` in every Power BI table. The signal schema includes rule type, rule name, direction, severity, start/end positions, x-axis values and a message.
+
+`nhs_interpretation_table(chart)` returns a compact reporting table with `schema_version`, `chart_id`, `chart_type`, `interpretation_type` and `interpretation`. A worked example is available in `docs/nhs_interpretation_table.md`.

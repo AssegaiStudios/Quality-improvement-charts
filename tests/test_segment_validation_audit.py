@@ -40,3 +40,45 @@ def test_excluded_points_are_removed_from_segment_calculations():
     out = qic_table(df, "x", "y", chart="i", breaks=[4], exclude=[3])
     assert out.loc[out["x"] == 3, "excluded"].iloc[0]
     assert out.groupby("segment_id")["centre"].first().iloc[0] == 10
+
+
+def test_excluded_points_suppress_rare_event_signals():
+    for chart_type in ["g", "t"]:
+        out = qic_table(
+            pd.DataFrame({"x": range(1, 9), "y": [10, 11, 12, 300, 11, 10, 12, 11]}),
+            "x",
+            "y",
+            chart=chart_type,
+            exclude_points=[4],
+        )
+        row = out.loc[out["x"] == 4].iloc[0]
+        assert bool(row["excluded"])
+        assert not bool(row["signal"])
+        assert not bool(row["special_cause"])
+        assert row["special_cause_rule"] == ""
+
+
+def test_excluded_points_suppress_risk_adjusted_signals():
+    data = pd.DataFrame(
+        {
+            "x": range(1, 9),
+            "observed": [10, 11, 10, 100, 11, 10, 12, 11],
+            "expected": [10] * 8,
+            "denominator": [100] * 8,
+        }
+    )
+    for chart_type in ["p_prime", "u_prime"]:
+        out = qic_table(
+            data,
+            "x",
+            "observed",
+            chart=chart_type,
+            expected="expected",
+            denominator="denominator",
+            exclude_points=[4],
+        )
+        row = out.loc[out["x"] == 4].iloc[0]
+        assert bool(row["excluded"])
+        assert not bool(row["signal"])
+        assert not bool(row["special_cause"])
+        assert row["special_cause_rule"] == ""
