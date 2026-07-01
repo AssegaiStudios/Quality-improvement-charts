@@ -44,6 +44,7 @@ def validate_data(frame: pd.DataFrame, config: ExcelConfig) -> list[str]:
     if frame.columns.duplicated().any():
         duplicated = sorted(set(frame.columns[frame.columns.duplicated()].astype(str)))
         errors.append(f"Duplicate column header(s): {', '.join(duplicated)}.")
+        return errors
 
     required = [config.x_column, config.y_column]
     if config.chart_type in {"p", "u"}:
@@ -78,4 +79,3 @@ def raise_if_errors(errors: list[str]) -> None:
 
     if errors:
         raise WorkbookValidationError(" ".join(errors))
-

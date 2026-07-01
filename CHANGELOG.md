@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.3 - 2026-06-10
+
+### Added
+
+- Practical coverage-hardening tests for Excel Companion validation, outputs, runner branches, helper modules and workbook logging.
+- v1.3.3 release notes.
+
+### Changed
+
+- Raised the coverage gate from 90% to 95%.
+- Updated validation evidence to 133 test functions, 149 passing tests and 96.80% coverage.
+
+### Fixed
+
+- `write_log(...)` now places headers in row 1 on an empty Log sheet before appending the first message.
+
 ## 1.3.2 - 2026-06-10
 
 ### Fixed

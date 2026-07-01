@@ -6,7 +6,7 @@ pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI ch
 
 ## Version
 
-**1.3.2 stable reviewer-fix release**
+**1.3.3 practical coverage-hardening release**
 
 This build implements the outstanding specification-based functionality without requiring a live R runtime. It includes deterministic Anhøj rules, bestbox/cutbox run-chart methods, segment-aware rule calculation, stronger process-change semantics, denominator-aware P-prime/U-prime charts, complete Power BI schemas and expanded validation/reporting tests.
 

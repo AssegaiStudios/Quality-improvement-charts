@@ -1,6 +1,6 @@
 # pyqicharts Excel Companion Phase 1 and Phase 2 Report
 
-Reviewer-fix status: v1.3.2 adds consistent excluded-row signal-text cleanup, expanded regression coverage, deterministic expanded-fixture expected outputs, `nhs_interpretation_table(chart)` documentation and built distribution artifacts in the downloadable bundle.
+Reviewer-fix status: v1.3.3 adds practical 95%+ coverage hardening, consistent excluded-row signal-text cleanup, expanded regression coverage, deterministic expanded-fixture expected outputs, `nhs_interpretation_table(chart)` documentation and built distribution artifacts in the downloadable bundle.
 
 ## Implemented Features
 

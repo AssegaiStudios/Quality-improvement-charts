@@ -1,5 +1,9 @@
 # pyqicharts Release Notes
 
+## v1.3.3
+
+v1.3.3 raises practical coverage to 96.80%, increases the coverage gate to 95%, adds Excel Companion branch tests, and fixes first-run Log sheet header placement.
+
 ## v1.3.2
 
 v1.3.2 clears signal-rule text for excluded MR, C, P, U, Xbar and S rows, updates stale validation/API stability documentation, declares release artifacts in `MANIFEST.in`, and adds focused regression coverage.

@@ -42,7 +42,7 @@ def test_examples_run_without_error(tmp_path, monkeypatch):
 
 
 def test_package_metadata_version_matches():
-    assert pyqicharts.__version__ == "1.3.2"
+    assert pyqicharts.__version__ == "1.3.3"
 
 
 def test_required_release_files_exist():

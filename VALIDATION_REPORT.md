@@ -1,13 +1,13 @@
-# pyqicharts v1.3.2 Validation Report
+# pyqicharts v1.3.3 Validation Report
 
 ## Test Evidence
 
-- Repository test inventory: 109 `test_...` functions.
-- Plain conda-environment `pytest`: 125 tests passing.
-- `python -m pytest`: 125 tests passing.
-- `pytest --cov=pyqicharts --cov=pyqicharts_excel --cov-report=term-missing`: 90.70% total coverage, passing the 90% gate.
+- Repository test inventory: 133 `test_...` functions.
+- Plain conda-environment `pytest`: 149 tests passing.
+- `python -m pytest`: 149 tests passing.
+- `pytest --cov=pyqicharts --cov=pyqicharts_excel --cov-report=term-missing`: 96.80% total coverage, passing the 95% gate.
 - Validation fixtures cover run, I, MR, C, P, U, Xbar, S, G, T, P-prime and U-prime outputs.
-- v1.3.2 tests include deterministic checks for Anhoej edge cases, bestbox/cutbox methods, segmented Nelson calculations, distinct P-prime/U-prime logic, Xbar/S process metadata, Power BI schemas, Excel workbook contents, rare-event edge cases and excluded-row signal-rule clearance across MR, C, P, U, Xbar/S, G, T, P-prime and U-prime charts.
+- v1.3.3 tests include deterministic checks for Anhoej edge cases, bestbox/cutbox methods, segmented Nelson calculations, distinct P-prime/U-prime logic, Xbar/S process metadata, Power BI schemas, Excel workbook contents, rare-event edge cases, excluded-row signal-rule clearance across MR, C, P, U, Xbar/S, G, T, P-prime and U-prime charts, Excel Companion validation branches, output/export branches, helper modules and workbook logging behavior.
 
 ## Methodology Notes
 

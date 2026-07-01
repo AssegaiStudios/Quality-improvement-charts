@@ -12,8 +12,8 @@ from pyqicharts import qic, qic_table, sample_healthcare_qi_data, sample_subgrou
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_version_is_1_3_2():
-    assert pyqicharts.__version__ == "1.3.2"
+def test_version_is_1_3_3():
+    assert pyqicharts.__version__ == "1.3.3"
 
 
 def test_sample_healthcare_dataset_is_available_as_function_and_csv():

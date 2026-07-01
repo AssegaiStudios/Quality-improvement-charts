@@ -230,7 +230,10 @@ def write_log(path: str | Path, message: str, level: str = "INFO") -> None:
     workbook = load_workbook(path)
     ws = workbook["Log"] if "Log" in workbook.sheetnames else workbook.create_sheet("Log")
     if ws.max_row == 1 and ws["A1"].value is None:
-        ws.append(["timestamp", "level", "message"])
+        # Empty template sheets still report one row in openpyxl. Write the
+        # header directly into row 1 so the first log message starts on row 2.
+        for column, value in enumerate(["timestamp", "level", "message"], start=1):
+            ws.cell(row=1, column=column, value=value)
         for cell in ws[1]:
             cell.font = Font(bold=True)
     ws.append([datetime.now().isoformat(timespec="seconds"), level, message])
@@ -260,4 +263,3 @@ def clear_output_sheets(path: str | Path) -> None:
         ws = workbook[sheet_name] if sheet_name in workbook.sheetnames else workbook.create_sheet(sheet_name)
         ws.delete_rows(1, ws.max_row)
     workbook.save(path)
-
