@@ -1,4 +1,4 @@
-# pyqicharts
+﻿# pyqicharts
 
 Quality Improvement (QI) and Statistical Process Control (SPC) charts for Python.
 
@@ -6,9 +6,9 @@ pyqicharts is a lightweight, Python-first toolkit for practical healthcare QI ch
 
 ## Version
 
-**1.3.3 practical coverage-hardening release**
+**1.3.4 validation and documentation hardening release**
 
-This build implements the outstanding specification-based functionality without requiring a live R runtime. It includes deterministic Anhøj rules, bestbox/cutbox run-chart methods, segment-aware rule calculation, stronger process-change semantics, denominator-aware P-prime/U-prime charts, complete Power BI schemas and expanded validation/reporting tests.
+This build implements the outstanding specification-based functionality without requiring a live R runtime. It includes deterministic Anhoej rules, bestbox/cutbox run-chart methods, segment-aware rule calculation, stronger process-change semantics, denominator-aware P-prime/U-prime charts, complete Power BI schemas, plotted signal annotations and expanded validation/reporting tests.
 
 Do not treat qicharts/qicharts2/NHS parity as complete until the evidence in `PARITY_REPORT.md` says so.
 
@@ -122,3 +122,4 @@ The simple `qic(...)` interface remains central. Public APIs should avoid breaki
 MIT License
 
 Copyright (c) 2026 Assegai Studios Ltd.
+

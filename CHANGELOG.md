@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.4 - 2026-06-11
+
+### Added
+
+- Plotted signal annotations with `qic(..., annotate_signals=True)`.
+- Regression tests for rendered signal annotations and `annotate_signals=False`.
+- Freeze-point isolation coverage without break/recalculation points.
+- Segmented G/T validation fixtures with expected-output comparison tests.
+- Narrative worked examples documentation.
+
+### Changed
+
+- Expanded statistical reference, user guide, reporting guide and formal statistical review.
+- Updated parity and validation reports to distinguish internal deterministic fixtures from external published reference certification.
+
 ## 1.3.3 - 2026-06-10
 
 ### Added

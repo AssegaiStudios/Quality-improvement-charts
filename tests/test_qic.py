@@ -29,3 +29,13 @@ def test_paretochart_returns_table():
 
 def test_pareto_chart_alias_returns_table():
     result = pareto_chart(sample_df(), "category", theme="nhs"); assert result.table["count"].sum() == 6; assert result.figure is not None
+
+
+def test_qic_signal_annotations_are_rendered_and_can_be_disabled():
+    df = pd.DataFrame({"month": range(1, 7), "value": [10, 10, 10, 10, 10, 30]})
+    labelled = qic(df, "month", "value", chart="i", baseline_points=5)
+    assert labelled.table["signal"].iloc[-1]
+    assert any("above UCL" in text.get_text() for text in labelled.axes.texts)
+
+    unlabelled = qic(df, "month", "value", chart="i", baseline_points=5, annotate_signals=False)
+    assert not any("above UCL" in text.get_text() for text in unlabelled.axes.texts)

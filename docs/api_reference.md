@@ -12,7 +12,9 @@ Supported `chart=` values include `run`, `i`, `mr`, `c`, `p`, `u`, `xbar`, `s`, 
 
 Common optional process arguments include `baseline_points`, `recalculation_points`, `target`, `interventions`, `step_changes`, `freeze_points`, `break_points`, `exclude_points`, `phases` and `rules`.
 
-v1.2 also accepts qicharts-style aliases: `baseline_end`, `freeze`, `breaks`, `exclude`, `recalculate_after`, `targets` and run-chart `method`.
+Plotting-only options include `annotate_signals=True`, which labels plotted signal points from calculated signal fields. Set `annotate_signals=False` for dense dashboards.
+
+pyqicharts also accepts qicharts-style aliases: `baseline_end`, `freeze`, `breaks`, `exclude`, `recalculate_after`, `targets` and run-chart `method`.
 
 Signal rules:
 

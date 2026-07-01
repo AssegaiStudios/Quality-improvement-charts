@@ -1,0 +1,13 @@
+chart,point_index,segment_id,centre,lcl,ucl,plot_value,signal,special_cause,signal_rule,special_cause_rule
+g,1,1,13.5,0.0,91.467765,12.0,False,False,,
+g,2,1,13.5,0.0,91.467765,15.0,False,False,,
+g,3,1,13.5,0.0,91.467765,13.0,False,False,,
+g,4,1,13.5,0.0,91.467765,14.0,False,False,,
+g,5,2,50.5,0.0,335.979388,50.0,False,False,,
+g,6,2,50.5,0.0,335.979388,52.0,False,False,,
+g,7,2,50.5,0.0,335.979388,49.0,False,False,,
+g,8,2,50.5,0.0,335.979388,51.0,False,False,,
+g,9,3,24.0,0.0,160.864964,5.0,False,False,,
+g,10,3,24.0,0.0,160.864964,6.0,False,False,,
+g,11,3,24.0,0.0,160.864964,5.0,False,False,,
+g,12,3,24.0,0.0,160.864964,80.0,False,False,,

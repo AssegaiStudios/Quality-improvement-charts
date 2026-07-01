@@ -2,6 +2,8 @@ import matplotlib
 matplotlib.use("Agg")
 import pandas as pd
 import pytest
+from pathlib import Path
+from pandas.testing import assert_frame_equal
 
 from pyqicharts import (
     days_between_falls_with_harm,
@@ -10,6 +12,8 @@ from pyqicharts import (
     qic,
     qic_table,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_g_chart_table_calculations():
@@ -72,3 +76,18 @@ def test_t_chart_rare_event_short_interval_signal_detection_works():
     assert out["signal"].iloc[-1]
     assert out["outside_lcl"].iloc[-1]
     assert out["signal_rule"].iloc[-1] == "Unusually short interval"
+
+
+def test_segmented_rare_event_validation_fixtures_match_expected_outputs():
+    fixture_dir = ROOT / "validation_data" / "segmented_rare_event"
+    manifest = pd.read_csv(fixture_dir / "segmented_rare_event_manifest.csv")
+    columns = ["chart", "point_index", "segment_id", "centre", "lcl", "ucl", "plot_value", "signal", "special_cause", "signal_rule", "special_cause_rule"]
+
+    for _, row in manifest.iterrows():
+        data = pd.read_csv(fixture_dir / row["input_file"])
+        actual = qic_table(data, "x", "y", chart=row["chart"], breaks=[5, 9])
+        actual = actual[[col for col in columns if col in actual]].copy()
+        for col in actual.select_dtypes(include="number").columns:
+            actual[col] = actual[col].round(6)
+        expected = pd.read_csv(fixture_dir / row["expected_file"])
+        assert_frame_equal(actual.fillna("").reset_index(drop=True), expected.fillna("").reset_index(drop=True), check_dtype=False)

@@ -57,6 +57,18 @@ def _scalar_or_none(series: pd.Series) -> float | None:
     non_null = series.dropna()
     return None if len(non_null) == 0 else float(non_null.iloc[0])
 
+
+def _signal_annotation_label(row: pd.Series) -> str:
+    """Choose the most specific human-readable label for a plotted signal."""
+
+    for column in ["special_cause_label", "special_cause_rule", "signal_rule"]:
+        value = row.get(column, "")
+        if pd.notna(value) and str(value).strip():
+            label = str(value).strip()
+            return label if len(label) <= 48 else label[:45] + "..."
+    return "Signal"
+
+
 def qic(
     data: pd.DataFrame,
     x: str,
@@ -88,6 +100,7 @@ def qic(
     exclude: list | None = None,
     recalculate_after: list | None = None,
     targets=None,
+    annotate_signals: bool = True,
 ) -> QicResult:
     """Create a QI/SPC chart.
 
@@ -148,6 +161,20 @@ def qic(
                 plotted_labels.add(label)
         else:
             ax.scatter(signal_rows[x], signal_rows["plot_value"], s=90, color=style.signal, marker="o", zorder=5, label="Signal")
+        if annotate_signals:
+            # Annotation text is deliberately derived from the calculated table
+            # fields so saved PNGs, notebooks and downstream exports tell the
+            # same story as `qic_table(...)`.
+            for _, row in signal_rows.iterrows():
+                ax.annotate(
+                    _signal_annotation_label(row),
+                    xy=(row[x], row["plot_value"]),
+                    xytext=(6, 10),
+                    textcoords="offset points",
+                    fontsize=8,
+                    color="#231F20",
+                    arrowprops={"arrowstyle": "->", "color": "#425563", "lw": 0.8},
+                )
     centre = _scalar_or_none(table["centre"]); lcl = _scalar_or_none(table["lcl"]); ucl = _scalar_or_none(table["ucl"]); centre_label = str(table["centre_label"].iloc[0]) if len(table) else "Centre"
     # Segment-aware horizontal lines let baseline/recalculation periods share
     # one plot without pretending a single limit applies to every segment.

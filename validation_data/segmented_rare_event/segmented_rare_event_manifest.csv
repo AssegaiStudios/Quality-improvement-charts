@@ -1,0 +1,3 @@
+chart,input_file,expected_file,breaks
+g,g_segmented.csv,g_segmented_expected.csv,5;9
+t,t_segmented.csv,t_segmented_expected.csv,5;9

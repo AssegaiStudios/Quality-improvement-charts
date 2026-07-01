@@ -1,5 +1,9 @@
 # pyqicharts Release Notes
 
+## v1.3.4
+
+v1.3.4 adds plotted signal annotations, freeze-point isolation coverage, segmented G/T validation fixtures, expanded statistical/user/reporting documentation, and clearer parity evidence language.
+
 ## v1.3.3
 
 v1.3.3 raises practical coverage to 96.80%, increases the coverage gate to 95%, adds Excel Companion branch tests, and fixes first-run Log sheet header placement.

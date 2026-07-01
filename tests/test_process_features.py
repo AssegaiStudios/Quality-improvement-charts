@@ -22,6 +22,17 @@ def test_recalculation_creates_new_segments():
     assert out.loc[out["segment_id"] == 2, "centre"].iloc[0] == 30.5
 
 
+def test_freeze_points_work_without_break_points_or_recalculation():
+    df = pd.DataFrame({"month": range(1, 7), "value": [10, 10, 10, 50, 55, 60]})
+    out = qic_table(df, "month", "value", chart="i", freeze_points=[3])
+    alias_out = qic_table(df, "month", "value", chart="i", freeze=[3])
+
+    assert out["baseline_period"].tolist() == [True, True, True, False, False, False]
+    assert out["segment_id"].nunique() == 1
+    assert out["centre"].tolist() == [10, 10, 10, 10, 10, 10]
+    assert alias_out["centre"].tolist() == out["centre"].tolist()
+
+
 def test_target_values_appear_in_table():
     df = pd.DataFrame({"month": range(1, 4), "value": [90, 92, 94]})
     out = qic_table(df, "month", "value", chart="i", target=95)
